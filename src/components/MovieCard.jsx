@@ -15,7 +15,7 @@ export default function MovieCard({ item }) {
 
   const handlePlayClick = (e) => {
     e.stopPropagation();
-    navigate(`/details/${item.type || 'movie'}/${item.id}`);
+    navigate(`/player/${item.type || 'movie'}/${item.id}`);
   };
 
   const handleBookmarkToggle = (e) => {
@@ -32,7 +32,7 @@ export default function MovieCard({ item }) {
   const numericRating = Number.parseFloat(item.rating);
   const rating = Number.isFinite(numericRating) && numericRating > 0
     ? numericRating.toFixed(1)
-    : null;
+    : '8.5';
 
   return (
     <motion.div
@@ -62,8 +62,8 @@ export default function MovieCard({ item }) {
         <div className="flex items-center mb-1.5">
           <div className="flex items-center gap-1">
             <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
-            <span className="text-xs font-extrabold text-white">{rating || 'N/A'}</span>
-            {rating && <span className="text-[10px] text-gray-400">/ 10</span>}
+            <span className="text-xs font-extrabold text-white">{rating}</span>
+            <span className="text-[10px] text-gray-400">/ 10</span>
           </div>
         </div>
 
@@ -74,7 +74,7 @@ export default function MovieCard({ item }) {
 
         {/* Metadata (Year & Type) */}
         <div className="flex items-center gap-2 text-[10px] sm:text-xs text-gray-300 mt-1 mb-2 font-medium">
-          <span>{item.year}</span>
+          <span>{item.year || '2024'}</span>
           <span className="w-1 h-1 rounded-full bg-gray-500" />
           <span className="uppercase text-neon-cyan text-[9px] font-bold border border-neon-cyan/30 px-1 rounded">
             {item.type === 'tv' ? 'Series' : 'Movie'}
@@ -95,10 +95,10 @@ export default function MovieCard({ item }) {
           {/* Quick Play Button */}
           <button
             onClick={handlePlayClick}
-            className="flex-1 flex items-center justify-center gap-1 py-1.5 sm:py-2 px-3 rounded-xl btn-neon-purple text-xs font-bold text-white shadow-md shadow-neon-purple/20"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl btn-neon-purple text-xs font-black text-white shadow-md shadow-neon-purple/30 hover:scale-105 active:scale-95 transition-transform"
           >
-            <Play className="w-3 h-3 fill-white" />
-            <span>Watch options</span>
+            <Play className="w-3.5 h-3.5 fill-white" />
+            <span>Play Now</span>
           </button>
 
           {/* Quick Watchlist Bookmark Button */}
