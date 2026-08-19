@@ -108,6 +108,12 @@ export default function LicensedStreamingPlayer() {
   const savedProgress = playbackProgress[id]?.progress || 0;
 
   useEffect(() => {
+    if (catalogStatus === 'missing') {
+      navigate(`/details/${type || 'movie'}/${id}`, { replace: true });
+    }
+  }, [catalogStatus, navigate, type, id]);
+
+  useEffect(() => {
     const video = videoRef.current;
     if (!video || !activeSource) return undefined;
 
@@ -288,15 +294,13 @@ export default function LicensedStreamingPlayer() {
           <div className="glass-panel-glow w-full max-w-2xl rounded-3xl p-7 text-center sm:p-10">
             <ShieldCheck className="mx-auto mb-5 h-12 w-12 text-neon-cyan" />
             <p className="mb-2 text-xs font-black uppercase tracking-[0.25em] text-neon-cyan">
-              Licensed playback only
+              Streaming options
             </p>
             <h1 className="mb-3 text-2xl font-black sm:text-3xl">
-              {mediaDetails?.title || 'This title'} has no configured stream
+              Choose where to watch {mediaDetails?.title || 'this title'}
             </h1>
             <p className="mx-auto mb-7 max-w-xl text-sm leading-6 text-gray-300">
-              Movie metadata APIs do not include the movie file. Add a source you own or are licensed to use
-              to <code className="rounded bg-white/10 px-1.5 py-0.5 text-neon-cyan">public/streams.json</code>.
-              Quality choices appear only when that source really provides those renditions.
+              This title is not hosted inside NebulaFlix. Open an official service below, or watch the trailer.
             </p>
             {catalogStatus === 'error' && (
               <p className="mb-5 rounded-xl border border-red-400/30 bg-red-400/10 p-3 text-xs text-red-200">

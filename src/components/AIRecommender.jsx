@@ -77,7 +77,7 @@ export default function AIRecommender() {
 
   const handlePlay = () => {
     if (scannedMovie) {
-      navigate(`/player/${scannedMovie.type || 'movie'}/${scannedMovie.id}`);
+      navigate(`/details/${scannedMovie.type || 'movie'}/${scannedMovie.id}`);
     }
   };
 
@@ -209,7 +209,7 @@ export default function AIRecommender() {
                       className="flex-1 sm:flex-none flex items-center justify-center gap-2 py-2.5 px-6 rounded-xl btn-neon-purple text-xs font-bold text-white shadow-md shadow-neon-purple/20"
                     >
                       <Play className="w-3.5 h-3.5 fill-white" />
-                      <span>Play Now</span>
+                      <span>Watch options</span>
                     </button>
                     <button
                       onClick={handleDetails}

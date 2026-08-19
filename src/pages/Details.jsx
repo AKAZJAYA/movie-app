@@ -7,6 +7,7 @@ import { Star, Play, Plus, Check, Clock, ExternalLink, Film, Sparkles } from 'lu
 // Data & Store
 import useAppStore from '../store/useAppStore';
 import { getMediaDetails, getTVSeasonEpisodes } from '../utils/api';
+import { getStreamEntry } from '../utils/streamCatalog';
 import MovieCard from '../components/MovieCard';
 import TrailerModal from '../components/TrailerModal';
 
@@ -18,6 +19,7 @@ export default function Details() {
   const [activeTab, setActiveTab] = useState('overview'); // overview, episodes, cast, similar
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [isTrailerOpen, setIsTrailerOpen] = useState(false);
+  const [playbackNotice, setPlaybackNotice] = useState('');
 
   // Scroll to top on ID/Type change
   useEffect(() => {
@@ -40,7 +42,25 @@ export default function Details() {
     staleTime: 1000 * 60 * 15,
   });
 
+  const {
+    data: defaultStreamEntry,
+    isLoading: isStreamAvailabilityLoading,
+  } = useQuery({
+    queryKey: ['streamAvailability', isTV ? 'tv' : 'movie', mediaItem?.id, selectedSeason],
+    queryFn: ({ signal }) => getStreamEntry({
+      type: isTV ? 'tv' : 'movie',
+      id: mediaItem.id,
+      season: selectedSeason,
+      episode: 1,
+      signal,
+    }),
+    enabled: Boolean(mediaItem?.id),
+    retry: false,
+    staleTime: 1000 * 60,
+  });
+
   const isBookmarked = mediaItem ? watchlist.some((x) => x.id === mediaItem.id) : false;
+  const hasInAppStream = Boolean(defaultStreamEntry);
 
   const handlePlayNow = () => {
     if (!mediaItem) return;
@@ -51,8 +71,38 @@ export default function Details() {
     navigate(url);
   };
 
-  const handleEpisodePlay = (epNum) => {
-    navigate(`/player/tv/${id}?season=${selectedSeason}&episode=${epNum}`);
+  const handleEpisodePlay = async (epNum) => {
+    setPlaybackNotice('');
+
+    try {
+      const streamEntry = await getStreamEntry({
+        type: 'tv',
+        id,
+        season: selectedSeason,
+        episode: epNum,
+      });
+
+      if (streamEntry) {
+        navigate(`/player/tv/${id}?season=${selectedSeason}&episode=${epNum}`);
+        return;
+      }
+    } catch {
+      // Fall through to the provider/trailer options below.
+    }
+
+    if (mediaItem?.watch_provider_link) {
+      window.location.assign(mediaItem.watch_provider_link);
+      return;
+    }
+
+    if (mediaItem?.trailer_url) {
+      setIsTrailerOpen(true);
+      return;
+    }
+
+    setPlaybackNotice('This episode is not hosted in the app and no official watch option is currently listed.');
+    setActiveTab('overview');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleWatchlistToggle = () => {
@@ -213,21 +263,58 @@ export default function Details() {
             
             {/* Playback disclosure */}
             <span className="bg-neon-cyan/10 border border-neon-cyan/25 text-neon-cyan font-bold px-3 py-1 rounded-xl text-xs">
-              QUALITY SHOWN IN PLAYER
+              {hasInAppStream ? 'QUALITY SHOWN IN PLAYER' : 'OFFICIAL WATCH AVAILABILITY'}
             </span>
           </div>
 
           {/* Core Action buttons with Pulse animations */}
           <div className="flex flex-wrap items-center gap-4 mb-8">
-            <button
-              onClick={handlePlayNow}
-              className="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl btn-neon-purple text-base font-extrabold text-white shadow-lg shadow-neon-purple/35 animate-[pulse_2s_infinite]"
-            >
-              <Play className="w-5 h-5 fill-white" />
-              <span>Watch options</span>
-            </button>
+            {isStreamAvailabilityLoading ? (
+              <button
+                type="button"
+                disabled
+                className="flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-8 py-3.5 text-base font-extrabold text-gray-300"
+              >
+                Checking watch options…
+              </button>
+            ) : hasInAppStream ? (
+              <button
+                onClick={handlePlayNow}
+                className="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl btn-neon-purple text-base font-extrabold text-white shadow-lg shadow-neon-purple/35 animate-[pulse_2s_infinite]"
+              >
+                <Play className="w-5 h-5 fill-white" />
+                <span>Play now</span>
+              </button>
+            ) : mediaItem.watch_provider_link ? (
+              <a
+                href={mediaItem.watch_provider_link}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl btn-neon-purple text-base font-extrabold text-white shadow-lg shadow-neon-purple/35"
+              >
+                <span>Where to watch</span>
+                <ExternalLink className="h-5 w-5" />
+              </a>
+            ) : mediaItem.trailer_url ? (
+              <button
+                type="button"
+                onClick={() => setIsTrailerOpen(true)}
+                className="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl btn-neon-purple text-base font-extrabold text-white shadow-lg shadow-neon-purple/35"
+              >
+                <Film className="h-5 w-5" />
+                <span>Watch trailer</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled
+                className="flex items-center justify-center gap-2 rounded-2xl bg-white/10 px-8 py-3.5 text-base font-extrabold text-gray-400"
+              >
+                No watch option listed
+              </button>
+            )}
 
-            {mediaItem.trailer_url && (
+            {mediaItem.trailer_url && (hasInAppStream || mediaItem.watch_provider_link) && (
               <button
                 onClick={() => setIsTrailerOpen(true)}
                 className="flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-white/5 border border-neon-cyan/30 hover:border-neon-cyan hover:bg-neon-cyan/10 text-white transition-all duration-300 shadow-md"
@@ -258,6 +345,12 @@ export default function Details() {
               )}
             </button>
           </div>
+
+          {playbackNotice && (
+            <p className="mb-8 rounded-xl border border-amber-300/25 bg-amber-300/10 px-4 py-3 text-sm text-amber-100">
+              {playbackNotice}
+            </p>
+          )}
 
           {/* Tab Navigation header */}
           <div className="border-b border-white/5 mb-6 flex gap-6 overflow-x-auto no-scrollbar select-none">

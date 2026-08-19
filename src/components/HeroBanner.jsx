@@ -13,7 +13,7 @@ export default function HeroBanner({ movie }) {
   const isBookmarked = watchlist.some((x) => x.id === movie.id);
 
   const handlePlay = () => {
-    navigate(`/player/${movie.type}/${movie.id}`);
+    navigate(`/details/${movie.type}/${movie.id}`);
   };
 
   const handleInfo = () => {

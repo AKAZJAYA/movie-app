@@ -15,7 +15,7 @@ export default function MovieCard({ item }) {
 
   const handlePlayClick = (e) => {
     e.stopPropagation();
-    navigate(`/player/${item.type || 'movie'}/${item.id}`);
+    navigate(`/details/${item.type || 'movie'}/${item.id}`);
   };
 
   const handleBookmarkToggle = (e) => {
