@@ -14,11 +14,13 @@ import {
   Server,
   Sparkles,
   Tv,
+  Zap,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import useAppStore from '../store/useAppStore';
 import { getMediaDetails, getTVSeasonEpisodes } from '../utils/api';
 import { getStreamEntry } from '../utils/streamCatalog';
+import HlsDirectPlayer from '../components/HlsDirectPlayer';
 
 const parsePositiveInteger = (value, fallback = 1) => {
   const parsed = Number.parseInt(value, 10);
@@ -134,6 +136,7 @@ export default function LicensedStreamingPlayer() {
   const currentSeason = parsePositiveInteger(seasonParam, 1);
   const currentEpisode = parsePositiveInteger(episodeParam, 1);
 
+  const [useDirectStream, setUseDirectStream] = useState(false);
   const [selectedServerIndex, setSelectedServerIndex] = useState(0);
   const [showServerMenu, setShowServerMenu] = useState(false);
   const [showEpisodesDrawer, setShowEpisodesDrawer] = useState(false);
@@ -176,6 +179,16 @@ export default function LicensedStreamingPlayer() {
     staleTime: 1000 * 60,
   });
 
+  const hasDirectStream = Boolean(directStreamEntry?.sources?.length);
+  const activeDirectSource = directStreamEntry?.sources?.[0] || null;
+
+  // If a direct stream exists, default to direct stream mode on initial load
+  useEffect(() => {
+    if (hasDirectStream) {
+      setUseDirectStream(true);
+    }
+  }, [hasDirectStream]);
+
   const savedProgress = playbackProgress[id]?.progress || 0;
 
   // Build current progress metadata item
@@ -187,9 +200,9 @@ export default function LicensedStreamingPlayer() {
     backdrop_url: mediaDetails?.backdrop_url,
     year: mediaDetails?.year,
     rating: mediaDetails?.rating,
-    server: STREAM_SERVERS[selectedServerIndex]?.name || 'Nebula Stream',
+    server: useDirectStream ? 'Direct 4K/1080p Master' : (STREAM_SERVERS[selectedServerIndex]?.name || 'Nebula Stream'),
     ...(isTV ? { season: currentSeason, episode: currentEpisode } : {}),
-  }), [id, mediaDetails, isTV, selectedServerIndex, currentSeason, currentEpisode]);
+  }), [id, mediaDetails, isTV, useDirectStream, selectedServerIndex, currentSeason, currentEpisode]);
 
   // Compute embed URL for the active server
   const activeServer = STREAM_SERVERS[selectedServerIndex] || STREAM_SERVERS[0];
@@ -212,7 +225,7 @@ export default function LicensedStreamingPlayer() {
   useEffect(() => {
     setIsIframeLoading(true);
     setIframeKey((prev) => prev + 1);
-  }, [embedUrl]);
+  }, [embedUrl, useDirectStream]);
 
   // Listen for VidAPI (VAPlayer) postMessage PLAYER_EVENT
   useEffect(() => {
@@ -406,11 +419,23 @@ export default function LicensedStreamingPlayer() {
               }`}
               title="Switch Streaming Server (S)"
             >
-              <Server className="h-4 w-4 text-neon-cyan" />
-              <span className="hidden md:inline">{activeServer.name.split(' ')[0]} {activeServer.name.split(' ')[1]}</span>
-              <span className="rounded bg-neon-purple/30 px-1.5 py-0.5 text-[9px] font-bold text-white">
-                {activeServer.quality}
-              </span>
+              {useDirectStream ? (
+                <>
+                  <Zap className="h-4 w-4 text-neon-cyan fill-neon-cyan" />
+                  <span className="hidden md:inline">Direct Master</span>
+                  <span className="rounded bg-neon-cyan/20 px-1.5 py-0.5 text-[9px] font-bold text-neon-cyan">
+                    4K/1080p
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Server className="h-4 w-4 text-neon-cyan" />
+                  <span className="hidden md:inline">{activeServer.name.split(' ')[0]} {activeServer.name.split(' ')[1]}</span>
+                  <span className="rounded bg-neon-purple/30 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                    {activeServer.quality}
+                  </span>
+                </>
+              )}
             </button>
 
             {/* Server Selection Dropdown */}
@@ -434,13 +459,43 @@ export default function LicensedStreamingPlayer() {
                   </div>
 
                   <div className="space-y-1.5 max-h-72 overflow-y-auto no-scrollbar">
+                    {/* Direct High-Bitrate Stream Option if configured */}
+                    {hasDirectStream && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUseDirectStream(true);
+                          setShowServerMenu(false);
+                        }}
+                        className={`flex w-full items-center justify-between rounded-2xl p-2.5 text-left transition-all ${
+                          useDirectStream
+                            ? 'border border-neon-cyan bg-neon-cyan/20 text-white shadow-[0_0_15px_rgba(6,182,212,0.3)]'
+                            : 'border border-transparent bg-white/5 text-gray-300 hover:border-white/15 hover:bg-white/10'
+                        }`}
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-extrabold text-white">Direct 4K/1080p Master</span>
+                            <span className="rounded bg-neon-cyan/20 px-1 py-0.2 text-[8px] font-black text-neon-cyan">
+                              ULTRA HD
+                            </span>
+                          </div>
+                          <span className="block text-[10px] text-gray-400">
+                            Adaptive Bitrate HLS • 4K/1080p/720p
+                          </span>
+                        </div>
+                        {useDirectStream && <Check className="h-4 w-4 text-neon-cyan flex-shrink-0" />}
+                      </button>
+                    )}
+
                     {STREAM_SERVERS.map((server, index) => {
-                      const isSelected = index === selectedServerIndex;
+                      const isSelected = !useDirectStream && index === selectedServerIndex;
                       return (
                         <button
                           key={server.id}
                           type="button"
                           onClick={() => {
+                            setUseDirectStream(false);
                             setSelectedServerIndex(index);
                             setShowServerMenu(false);
                           }}
@@ -489,36 +544,64 @@ export default function LicensedStreamingPlayer() {
         </div>
       </div>
 
-      {/* 2. MAIN STREAMING PLAYER (Direct or Embed) */}
+      {/* 2. MAIN STREAMING PLAYER (Direct HLS/MP4 or Multi-Server Embed) */}
       <div className="relative h-full w-full bg-black">
-        {/* Loading Spinner Overlay */}
-        {isIframeLoading && (
-          <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-space-900/90 text-center backdrop-blur-sm">
-            <div className="relative mb-4 flex h-14 w-14 items-center justify-center">
-              <span className="absolute inset-0 animate-spin rounded-full border-4 border-neon-purple/20 border-t-neon-purple" />
-              <span className="absolute inset-2 animate-[spin_1.2s_linear_infinite_reverse] rounded-full border-4 border-neon-cyan/20 border-b-neon-cyan" />
-              <LoaderCircle className="h-6 w-6 animate-pulse text-neon-cyan" />
-            </div>
-            <p className="text-xs font-black uppercase tracking-[0.25em] text-white">
-              Connecting to {activeServer.name}...
-            </p>
-            <p className="mt-1 text-[11px] text-gray-400">
-              Loading high-definition stream • Press S to switch server
-            </p>
-          </div>
-        )}
+        {useDirectStream && activeDirectSource ? (
+          <HlsDirectPlayer
+            key={`direct-${activeDirectSource.url}`}
+            src={activeDirectSource.url}
+            poster={directStreamEntry?.poster || mediaDetails?.backdrop_url || mediaDetails?.poster_url}
+            title={mediaDetails?.title}
+            captions={directStreamEntry?.captions || []}
+            initialTime={savedProgress}
+            onTimeUpdate={(curr, dur) => {
+              const now = Date.now();
+              if (now - lastSaveTimeRef.current > 5000) {
+                lastSaveTimeRef.current = now;
+                if (dur > 0 && curr > 0) {
+                  saveProgress(id, curr, dur, buildProgressItem());
+                }
+              }
+            }}
+            onEnded={() => {
+              if (isTV) setCountdown(10);
+            }}
+            onError={() => {
+              setUseDirectStream(false);
+            }}
+          />
+        ) : (
+          <>
+            {/* Loading Spinner Overlay */}
+            {isIframeLoading && (
+              <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-space-900/90 text-center backdrop-blur-sm">
+                <div className="relative mb-4 flex h-14 w-14 items-center justify-center">
+                  <span className="absolute inset-0 animate-spin rounded-full border-4 border-neon-purple/20 border-t-neon-purple" />
+                  <span className="absolute inset-2 animate-[spin_1.2s_linear_infinite_reverse] rounded-full border-4 border-neon-cyan/20 border-b-neon-cyan" />
+                  <LoaderCircle className="h-6 w-6 animate-pulse text-neon-cyan" />
+                </div>
+                <p className="text-xs font-black uppercase tracking-[0.25em] text-white">
+                  Connecting to {activeServer.name}...
+                </p>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Loading high-definition stream • Press S to switch server
+                </p>
+              </div>
+            )}
 
-        {/* Embedded Streaming Frame */}
-        <iframe
-          key={iframeKey}
-          src={embedUrl}
-          title={mediaDetails?.title || 'Movie Player'}
-          className="h-full w-full border-0 bg-black"
-          allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope"
-          allowFullScreen
-          referrerPolicy="origin"
-          onLoad={() => setIsIframeLoading(false)}
-        />
+            {/* Embedded Streaming Frame */}
+            <iframe
+              key={iframeKey}
+              src={embedUrl}
+              title={mediaDetails?.title || 'Movie Player'}
+              className="h-full w-full border-0 bg-black"
+              allow="autoplay; fullscreen; encrypted-media; picture-in-picture; accelerometer; gyroscope"
+              allowFullScreen
+              referrerPolicy="origin"
+              onLoad={() => setIsIframeLoading(false)}
+            />
+          </>
+        )}
       </div>
 
       {/* 3. TV SERIES EPISODES DRAWER */}
