@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Play, Sparkles, ShieldCheck } from 'lucide-react';
+import { Play } from 'lucide-react';
 
 // Data & Store
 import { blockbusterMovies, blockbusterTV } from '../data/blockbusterDb';
@@ -26,14 +26,14 @@ export default function Home() {
 
   const continueWatchingList = getContinueWatchingList();
 
-  // 1. Fetch live Trending 4K Blu-Ray Movies via OMDb
+  // 1. Fetch trending movie metadata via OMDb
   const { data: trendingMovies, isLoading: isTrendingLoading } = useQuery({
     queryKey: ['omdbTrendingMovies'],
     queryFn: () => getTrending('movie'),
     staleTime: 1000 * 60 * 10,
   });
 
-  // 2. Fetch live Top Rated 1080p Masterpieces via OMDb
+  // 2. Fetch top-rated movie metadata via OMDb
   const { data: topRatedMovies, isLoading: isTopRatedLoading } = useQuery({
     queryKey: ['omdbTopRatedMovies'],
     queryFn: () => getTopRatedMovies(),
@@ -47,7 +47,7 @@ export default function Home() {
     staleTime: 1000 * 60 * 10,
   });
 
-  // 4. Fetch live Latest HD Feed
+  // 4. Fetch the latest curated metadata feed
   const { data: liveMovies, isLoading: isLiveLoading } = useQuery({
     queryKey: ['omdbLatestFeed'],
     queryFn: () => getLatestMovies(),
@@ -157,16 +157,16 @@ export default function Home() {
           </div>
         )}
 
-        {/* 2. TRENDING 4K BLU-RAY MASTERPIECES */}
+        {/* 2. TRENDING MOVIES */}
         <MovieRow 
-          title="Trending 4K Blu-Ray Blockbusters" 
+          title="Trending Movies" 
           items={trendingMovies || blockbusterMovies} 
           isLoading={isTrendingLoading}
         />
 
-        {/* 3. TOP RATED 1080P MASTERPIECES */}
+        {/* 3. TOP RATED MOVIES */}
         <MovieRow 
-          title="Top Rated 1080p Masterpieces" 
+          title="Top Rated Movies" 
           items={topRatedMovies || blockbusterMovies} 
           isLoading={isTopRatedLoading}
         />
@@ -183,7 +183,7 @@ export default function Home() {
 
         {/* 6. LIVE RELEASES ROW */}
         <MovieRow 
-          title="Recently Added in Full HD" 
+          title="Recently Added" 
           items={liveMovies || []} 
           isLoading={isLiveLoading} 
         />

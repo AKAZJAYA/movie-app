@@ -1,6 +1,5 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, Compass, LayoutGrid, HardDrive, User, Film } from 'lucide-react';
+import { Bookmark, Compass, LayoutGrid, HardDrive } from 'lucide-react';
 import useAppStore from '../store/useAppStore';
 import MovieCard from '../components/MovieCard';
 

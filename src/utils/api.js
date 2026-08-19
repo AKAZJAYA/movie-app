@@ -1,31 +1,166 @@
 import axios from 'axios';
 import { blockbusterMovies, blockbusterTV } from '../data/blockbusterDb';
 
-// User OMDb API Configuration
-const OMDB_API_KEY = import.meta.env.VITE_OMDB_API_KEY || 'c2818c48';
+// OMDb provides metadata only. Use a key issued to the app owner.
+const OMDB_API_KEY = import.meta.env.VITE_OMDB_API_KEY?.trim();
 const OMDB_BASE_URL = 'https://www.omdbapi.com';
-
-// Cinemeta IMDb Stremio Official Catalog
-const CINEMETA_BASE_URL = 'https://v3-cinemeta.strem.io';
 
 // Axios instance for OMDb API
 const omdbApi = axios.create({
   baseURL: OMDB_BASE_URL,
   timeout: 10000,
-  params: {
-    apikey: OMDB_API_KEY,
-  },
+  params: OMDB_API_KEY ? { apikey: OMDB_API_KEY } : {},
 });
 
-const cinemetaApi = axios.create({
-  baseURL: CINEMETA_BASE_URL,
-  timeout: 10000,
+// TMDB credentials remain inside the Netlify Function at /api/tmdb.
+const tmdbApi = axios.create({
+  baseURL: '/api/tmdb',
+  timeout: 15000,
 });
+
+const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
+const WATCH_REGION = (import.meta.env.VITE_WATCH_REGION || 'LK').toUpperCase();
+
+const TMDB_GENRES = {
+  12: 'Adventure',
+  14: 'Fantasy',
+  16: 'Animation',
+  18: 'Drama',
+  27: 'Horror',
+  28: 'Action',
+  35: 'Comedy',
+  36: 'History',
+  37: 'Western',
+  53: 'Thriller',
+  80: 'Crime',
+  99: 'Documentary',
+  878: 'Sci-Fi',
+  9648: 'Mystery',
+  10402: 'Music',
+  10749: 'Romance',
+  10751: 'Family',
+  10752: 'War',
+  10759: 'Action & Adventure',
+  10762: 'Kids',
+  10763: 'News',
+  10764: 'Reality',
+  10765: 'Sci-Fi & Fantasy',
+  10766: 'Soap',
+  10767: 'Talk',
+  10768: 'War & Politics',
+};
+
+const imageUrl = (path, size, fallback = '') => (
+  path ? `${TMDB_IMAGE_BASE}/${size}${path}` : fallback
+);
+
+const normalizeWatchProviders = (watchProviders, region = WATCH_REGION) => {
+  const regional = watchProviders?.results?.[region];
+  if (!regional) return { link: '', providers: [], region };
+
+  const byId = new Map();
+  ['flatrate', 'free', 'ads', 'rent', 'buy'].forEach((method) => {
+    (regional[method] || []).forEach((provider) => {
+      const current = byId.get(provider.provider_id) || {
+        id: provider.provider_id,
+        name: provider.provider_name,
+        logo_url: imageUrl(provider.logo_path, 'w92'),
+        methods: [],
+      };
+      if (!current.methods.includes(method)) current.methods.push(method);
+      byId.set(provider.provider_id, current);
+    });
+  });
+
+  return {
+    link: regional.link || '',
+    providers: [...byId.values()],
+    region,
+  };
+};
+
+const tmdbTrailerUrl = (videos) => {
+  const candidates = videos?.results?.filter((video) => video.site === 'YouTube') || [];
+  const trailer = candidates.find((video) => video.official && video.type === 'Trailer')
+    || candidates.find((video) => video.type === 'Trailer')
+    || candidates[0];
+  return trailer ? `https://www.youtube.com/embed/${trailer.key}` : '';
+};
+
+export const normalizeTmdbItem = (item, typeHint = '') => {
+  if (!item || !item.id) return null;
+
+  const type = item.resolved_media_type
+    || item.media_type
+    || typeHint
+    || (item.first_air_date || item.name ? 'tv' : 'movie');
+  if (type !== 'movie' && type !== 'tv') return null;
+
+  const imdbId = item.external_ids?.imdb_id || item.imdb_id || '';
+  const localMatch = [...blockbusterMovies, ...blockbusterTV]
+    .find((entry) => String(entry.id) === String(item.id) || entry.imdb_id === imdbId);
+  const releaseDate = item.release_date || item.first_air_date || '';
+  const title = item.title || item.name || item.original_title || item.original_name || 'Untitled';
+  const genres = item.genres?.map((genre) => genre.name)
+    || item.genre_ids?.map((genreId) => TMDB_GENRES[genreId]).filter(Boolean)
+    || [];
+  const watch = normalizeWatchProviders(item.watch_providers);
+  const runtime = item.runtime || item.episode_run_time?.[0];
+  const trailerUrl = tmdbTrailerUrl(item.videos) || localMatch?.trailer_url || '';
+
+  return {
+    id: String(item.id),
+    tmdb_id: item.id,
+    imdb_id: imdbId,
+    title,
+    year: releaseDate ? releaseDate.slice(0, 4) : '',
+    release_date: releaseDate,
+    poster_url: imageUrl(item.poster_path, 'w500', localMatch?.poster_url),
+    backdrop_url: imageUrl(item.backdrop_path, 'original', localMatch?.backdrop_url),
+    rating: Number(item.vote_average || 0).toFixed(1),
+    vote_count: item.vote_count || 0,
+    genres: genres.length ? genres : [type === 'tv' ? 'TV Series' : 'Movie'],
+    overview: item.overview || `Explore details, cast, and availability for ${title}.`,
+    tagline: item.tagline || '',
+    runtime: runtime ? `${runtime} min` : '',
+    popularity: Number(item.popularity || 0).toFixed(1),
+    type,
+    trailer_url: trailerUrl,
+    cast: (item.credits?.cast || []).slice(0, 14).map((person) => ({
+      name: person.name,
+      character: person.character || person.known_for_department || 'Cast',
+      profile_path: imageUrl(person.profile_path, 'w185'),
+    })),
+    seasons: item.seasons || [],
+    number_of_seasons: item.number_of_seasons || (type === 'tv' ? 1 : undefined),
+    status: item.status || 'Released',
+    similar: (item.similar?.results || [])
+      .map((similar) => normalizeTmdbItem({ ...similar, media_type: type }, type))
+      .filter(Boolean)
+      .slice(0, 12),
+    watch_providers: watch.providers,
+    watch_provider_link: watch.link,
+    watch_region: watch.region,
+    data_source: 'tmdb',
+  };
+};
+
+const fetchTmdbList = async (action, params = {}, typeHint = '') => {
+  try {
+    const response = await tmdbApi.get('', { params: { action, ...params } });
+    if (!Array.isArray(response.data?.results)) return null;
+    return response.data.results
+      .map((item) => normalizeTmdbItem(item, typeHint))
+      .filter(Boolean);
+  } catch {
+    return null;
+  }
+};
 
 const cache = new Map();
 
 /**
- * Curated Top HD Masterpiece IMDb IDs
+ * Curated IMDb IDs used when a metadata key is configured.
  */
 const FEATURED_IMDB_MOVIES = [
   'tt15239678', // Dune: Part Two
@@ -87,7 +222,7 @@ export const normalizeOmdbItem = (item) => {
   const type = isSeries ? 'tv' : 'movie';
   const imdbId = item.imdbID || (item.id ? item.id.toString() : '');
   const title = item.Title || item.name || 'Untitled';
-  const year = item.Year ? item.Year.split('–')[0].trim() : '2024';
+  const year = item.Year ? item.Year.split('–')[0].trim() : '';
   
   // Genres
   let genres = [];
@@ -115,9 +250,8 @@ export const normalizeOmdbItem = (item) => {
   // Backdrop
   const backdrop = `https://images.metahub.space/background/medium/${imdbId}/img`;
 
-  // Rating & Quality
-  const ratingValue = parseFloat(item.imdbRating && item.imdbRating !== 'N/A' ? item.imdbRating : '7.8');
-  const quality = ratingValue >= 8.0 ? '4K BLU-RAY' : '1080p BLU-RAY';
+  // Ratings do not indicate the resolution or quality of a video source.
+  const ratingValue = parseFloat(item.imdbRating && item.imdbRating !== 'N/A' ? item.imdbRating : '0');
 
   // Trailers map for blockbusters
   const localMatch = [...blockbusterMovies, ...blockbusterTV].find(x => x.imdb_id === imdbId || x.id === imdbId);
@@ -129,28 +263,29 @@ export const normalizeOmdbItem = (item) => {
     tmdb_id: localMatch?.tmdb_id || localMatch?.id,
     title,
     year,
-    release_date: item.Released !== 'N/A' ? item.Released : `${year}-01-01`,
+    release_date: item.Released && item.Released !== 'N/A'
+      ? item.Released
+      : (year ? `${year}-01-01` : ''),
     poster_url: poster,
     backdrop_url: backdrop,
-    rating: ratingValue.toFixed(1),
-    vote_count: item.imdbVotes && item.imdbVotes !== 'N/A' ? item.imdbVotes : '500,000+',
+    rating: ratingValue > 0 ? ratingValue.toFixed(1) : '',
+    vote_count: item.imdbVotes && item.imdbVotes !== 'N/A' ? item.imdbVotes : '',
     genres,
     overview: item.Plot && item.Plot !== 'N/A' 
       ? item.Plot 
-      : `Immerse yourself in ${title}, streaming in master 1080p / 4K Blu-ray audio & video on NebulaFlix.`,
-    tagline: item.Awards && item.Awards !== 'N/A' ? item.Awards : '4K Ultra HD Blu-Ray Edition',
-    runtime: item.Runtime && item.Runtime !== 'N/A' ? item.Runtime : '120 min',
+      : `Explore details, cast, and availability for ${title}.`,
+    tagline: item.Awards && item.Awards !== 'N/A' ? item.Awards : '',
+    runtime: item.Runtime && item.Runtime !== 'N/A' ? item.Runtime : (localMatch?.runtime || ''),
     director: item.Director && item.Director !== 'N/A' ? item.Director : '',
     writer: item.Writer && item.Writer !== 'N/A' ? item.Writer : '',
     ratings: item.Ratings || [],
     box_office: item.BoxOffice && item.BoxOffice !== 'N/A' ? item.BoxOffice : '',
-    popularity: '250.0',
+    popularity: localMatch?.popularity || '',
     type,
-    quality,
     trailer_url: trailerUrl,
     cast,
     seasons: [],
-    number_of_seasons: isSeries ? (parseInt(item.totalSeasons) || 1) : 1,
+    number_of_seasons: isSeries ? (parseInt(item.totalSeasons) || undefined) : undefined,
     status: 'Released',
   };
 };
@@ -162,6 +297,10 @@ export const getMovieByImdbId = async (imdbId) => {
   if (!imdbId) return null;
   const cacheKey = `omdb_id_${imdbId}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
+  const localMatch = [...blockbusterMovies, ...blockbusterTV]
+    .find((item) => item.imdb_id === imdbId || item.id === imdbId);
+
+  if (!OMDB_API_KEY) return localMatch || null;
 
   try {
     const response = await omdbApi.get('/', {
@@ -181,7 +320,6 @@ export const getMovieByImdbId = async (imdbId) => {
   }
 
   // Fallback to local blockbusters
-  const localMatch = [...blockbusterMovies, ...blockbusterTV].find(x => x.imdb_id === imdbId || x.id === imdbId);
   return localMatch || null;
 };
 
@@ -194,7 +332,26 @@ export const searchOmdb = async (query, page = 1, type = '') => {
   const cacheKey = `omdb_search_${query.trim().toLowerCase()}_p${page}_t${cleanType}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
+  const tmdbResults = await fetchTmdbList('search', {
+    query: query.trim(),
+    page,
+    type: type === 'movie' || type === 'tv' ? type : undefined,
+  }, type);
+  if (tmdbResults) {
+    cache.set(cacheKey, tmdbResults);
+    return tmdbResults;
+  }
+
   try {
+    if (!OMDB_API_KEY) {
+      const localItems = [...blockbusterMovies, ...blockbusterTV];
+      const normalizedQuery = query.trim().toLowerCase();
+      return localItems.filter((item) => {
+        const matchesQuery = item.title?.toLowerCase().includes(normalizedQuery);
+        const matchesType = !type || item.type === type;
+        return matchesQuery && matchesType;
+      });
+    }
     const params = {
       s: query.trim(),
       page,
@@ -217,7 +374,7 @@ export const searchOmdb = async (query, page = 1, type = '') => {
 };
 
 /**
- * Fetch Curated High-Definition Blockbuster Movies from OMDb
+ * Fetch curated movie metadata from OMDb.
  */
 export const getTrending = async (mediaType = 'movie') => {
   const isSeries = mediaType === 'tv';
@@ -225,6 +382,12 @@ export const getTrending = async (mediaType = 'movie') => {
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
   const ids = isSeries ? FEATURED_IMDB_SERIES : FEATURED_IMDB_MOVIES;
+
+  const tmdbResults = await fetchTmdbList('trending', { type: mediaType }, mediaType);
+  if (tmdbResults?.length) {
+    cache.set(cacheKey, tmdbResults);
+    return tmdbResults;
+  }
 
   try {
     // Fetch all featured items in parallel from OMDb
@@ -249,6 +412,12 @@ export const getTrending = async (mediaType = 'movie') => {
 export const getTopRatedMovies = async () => {
   const cacheKey = 'omdb_top_rated';
   if (cache.has(cacheKey)) return cache.get(cacheKey);
+
+  const tmdbResults = await fetchTmdbList('top-rated', { type: 'movie' }, 'movie');
+  if (tmdbResults?.length) {
+    cache.set(cacheKey, tmdbResults);
+    return tmdbResults;
+  }
 
   const topIds = [
     'tt0111161', // The Shawshank Redemption
@@ -286,6 +455,12 @@ export const getPopularTVShows = async () => {
   const cacheKey = 'omdb_popular_tv';
   if (cache.has(cacheKey)) return cache.get(cacheKey);
 
+  const tmdbResults = await fetchTmdbList('popular', { type: 'tv' }, 'tv');
+  if (tmdbResults?.length) {
+    cache.set(cacheKey, tmdbResults);
+    return tmdbResults;
+  }
+
   try {
     const items = await Promise.all(FEATURED_IMDB_SERIES.map(id => getMovieByImdbId(id)));
     const validItems = items.filter(Boolean);
@@ -311,6 +486,17 @@ export const discoverMedia = async ({
 } = {}) => {
   const cacheKey = `omdb_discover_${type}_${genre}_${year}_${minRating}`;
   if (cache.has(cacheKey)) return cache.get(cacheKey);
+
+  const tmdbResults = await fetchTmdbList('discover', {
+    type,
+    genre,
+    year,
+    minRating: minRating === 'All' ? undefined : minRating.replace('+', ''),
+  }, type);
+  if (tmdbResults) {
+    cache.set(cacheKey, tmdbResults);
+    return tmdbResults;
+  }
 
   // Fetch full pool of items
   const basePool = await getTrending(type);
@@ -342,6 +528,22 @@ export const discoverMedia = async ({
 export const getMediaDetails = async (type, id) => {
   if (!id) return null;
   const cleanId = id.toString();
+
+  const cacheKey = `tmdb_details_${type}_${cleanId}`;
+  if (cache.has(cacheKey)) return cache.get(cacheKey);
+
+  try {
+    const response = await tmdbApi.get('', {
+      params: { action: 'details', type: type || 'movie', id: cleanId },
+    });
+    const tmdbData = normalizeTmdbItem(response.data, type);
+    if (tmdbData) {
+      cache.set(cacheKey, tmdbData);
+      return tmdbData;
+    }
+  } catch {
+    // Local/OMDb metadata below keeps development and offline fallbacks working.
+  }
   
   // If it's an IMDb ID or numeric ID, fetch from OMDb
   if (cleanId.startsWith('tt')) {
@@ -372,8 +574,32 @@ export const getMediaDetails = async (type, id) => {
  * Fetch TV Episodes
  */
 export const getTVSeasonEpisodes = async (tvId, seasonNumber = 1) => {
-  // If TV ID is an IMDb ID, we can query OMDb season episodes endpoint:
-  // http://www.omdbapi.com/?i=tt0903747&Season=1&apikey=c2818c48
+  const tmdbCacheKey = `tmdb_season_${tvId}_${seasonNumber}`;
+  if (cache.has(tmdbCacheKey)) return cache.get(tmdbCacheKey);
+
+  try {
+    const response = await tmdbApi.get('', {
+      params: { action: 'season', type: 'tv', id: tvId, season: seasonNumber },
+    });
+    if (Array.isArray(response.data?.episodes)) {
+      const episodes = response.data.episodes.map((episode) => ({
+        episode_number: episode.episode_number,
+        name: episode.name,
+        title: `Episode ${episode.episode_number}: ${episode.name}`,
+        overview: episode.overview || '',
+        runtime: episode.runtime ? `${episode.runtime} min` : '',
+        still_path: imageUrl(episode.still_path, 'w780'),
+        air_date: episode.air_date,
+        vote_average: episode.vote_average,
+      }));
+      cache.set(tmdbCacheKey, episodes);
+      return episodes;
+    }
+  } catch {
+    // OMDb fallback below supports IMDb IDs when the Netlify Function is absent.
+  }
+
+  // OMDb can provide episode metadata for IMDb series IDs.
   if (tvId && tvId.startsWith('tt')) {
     const cacheKey = `omdb_season_${tvId}_${seasonNumber}`;
     if (cache.has(cacheKey)) return cache.get(cacheKey);
@@ -391,11 +617,11 @@ export const getTVSeasonEpisodes = async (tvId, seasonNumber = 1) => {
           episode_number: parseInt(ep.Episode) || 1,
           name: ep.Title,
           title: `Episode ${ep.Episode}: ${ep.Title}`,
-          overview: `Official Episode ${ep.Episode} streaming in master 1080p Blu-Ray quality. IMDb Rating: ${ep.imdbRating || '8.5'}.`,
-          runtime: '50 min',
+          overview: `Episode ${ep.Episode}. IMDb rating: ${ep.imdbRating || 'N/A'}.`,
+          runtime: '',
           still_path: `https://images.metahub.space/background/medium/${tvId}/img`,
           air_date: ep.Released,
-          vote_average: ep.imdbRating || '8.5',
+          vote_average: ep.imdbRating && ep.imdbRating !== 'N/A' ? ep.imdbRating : null,
         }));
         cache.set(cacheKey, episodes);
         return episodes;
@@ -405,22 +631,18 @@ export const getTVSeasonEpisodes = async (tvId, seasonNumber = 1) => {
     }
   }
 
-  // Fallback episodes
-  return [
-    { episode_number: 1, title: "Episode 1: Pilot", overview: "The start of an amazing journey in 4K HDR Blu-Ray.", runtime: "55 min" },
-    { episode_number: 2, title: "Episode 2: Trajectory", overview: "Tension rises as critical anomalies are detected.", runtime: "50 min" },
-    { episode_number: 3, title: "Episode 3: Resonance", overview: "A high-stakes encounter tests the crew's resolve.", runtime: "52 min" },
-    { episode_number: 4, title: "Episode 4: Eclipse", overview: "Confronting revelations alter the mission's future.", runtime: "58 min" },
-  ];
+  return [];
 };
 
 /**
  * Latest feed
  */
 export const getLatestMovies = async () => {
-  return getTrending('movie');
+  const results = await fetchTmdbList('latest', { type: 'movie' }, 'movie');
+  return results?.length ? results : getTrending('movie');
 };
 
 export const getLatestTVShows = async () => {
-  return getTrending('tv');
+  const results = await fetchTmdbList('popular', { type: 'tv' }, 'tv');
+  return results?.length ? results : getTrending('tv');
 };

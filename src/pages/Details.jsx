@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Play, Plus, Check, Clock, Film, Award, Heart, Sparkles } from 'lucide-react';
+import { Star, Play, Plus, Check, Clock, ExternalLink, Film, Sparkles } from 'lucide-react';
 
 // Data & Store
 import useAppStore from '../store/useAppStore';
@@ -22,11 +22,9 @@ export default function Details() {
   // Scroll to top on ID/Type change
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    setActiveTab('overview');
-    setSelectedSeason(1);
   }, [id, type]);
 
-  // Fetch real-time TMDB details
+  // Fetch title metadata
   const { data: mediaItem, isLoading } = useQuery({
     queryKey: ['mediaDetails', type, id],
     queryFn: () => getMediaDetails(type || 'movie', id),
@@ -67,7 +65,7 @@ export default function Details() {
   };
 
   // Compute similar items
-  const similarItems = mediaItem?.similar || [];
+  const similarItems = useMemo(() => mediaItem?.similar || [], [mediaItem?.similar]);
 
   // Dynamic Tabs list based on type
   const tabOptions = useMemo(() => {
@@ -95,7 +93,7 @@ export default function Details() {
           <Sparkles className="w-5 h-5 text-neon-cyan animate-pulse" />
         </div>
         <p className="text-sm font-bold tracking-widest text-neon-cyan uppercase animate-pulse">
-          FETCHING TMDB METADATA QUADRANT...
+          FETCHING TITLE METADATA...
         </p>
       </div>
     );
@@ -186,8 +184,14 @@ export default function Details() {
             {/* Star Rating */}
             <div className="flex items-center gap-1.5 bg-white/5 border border-white/5 px-3 py-1 rounded-xl">
               <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-              <span className="text-white font-extrabold">{parseFloat(mediaItem.rating).toFixed(1)}</span>
-              <span className="text-xs text-gray-400">/ 10</span>
+              <span className="text-white font-extrabold">
+                {Number.parseFloat(mediaItem.rating) > 0
+                  ? Number.parseFloat(mediaItem.rating).toFixed(1)
+                  : 'N/A'}
+              </span>
+              {Number.parseFloat(mediaItem.rating) > 0 && (
+                <span className="text-xs text-gray-400">/ 10</span>
+              )}
             </div>
 
             {/* Year */}
@@ -207,9 +211,9 @@ export default function Details() {
               </span>
             )}
             
-            {/* Library tag */}
+            {/* Playback disclosure */}
             <span className="bg-neon-cyan/10 border border-neon-cyan/25 text-neon-cyan font-bold px-3 py-1 rounded-xl text-xs">
-              4K ULTRA HDR
+              QUALITY SHOWN IN PLAYER
             </span>
           </div>
 
@@ -220,7 +224,7 @@ export default function Details() {
               className="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl btn-neon-purple text-base font-extrabold text-white shadow-lg shadow-neon-purple/35 animate-[pulse_2s_infinite]"
             >
               <Play className="w-5 h-5 fill-white" />
-              <span>Watch Now</span>
+              <span>Watch options</span>
             </button>
 
             {mediaItem.trailer_url && (
@@ -298,13 +302,62 @@ export default function Details() {
                       {mediaItem.overview}
                     </p>
 
+                    {mediaItem.watch_providers?.length > 0 && (
+                      <section className="rounded-2xl border border-neon-cyan/20 bg-neon-cyan/5 p-4 sm:p-5">
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h2 className="text-sm font-black text-white">Where to watch</h2>
+                            <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">
+                              Region: {mediaItem.watch_region}
+                            </p>
+                          </div>
+                          {mediaItem.watch_provider_link && (
+                            <a
+                              href={mediaItem.watch_provider_link}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center gap-1.5 rounded-xl border border-neon-cyan/30 bg-neon-cyan/10 px-3 py-2 text-xs font-bold text-neon-cyan hover:border-neon-cyan"
+                            >
+                              View current offers <ExternalLink className="h-3.5 w-3.5" />
+                            </a>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {mediaItem.watch_providers.map((provider) => (
+                            <div
+                              key={provider.id}
+                              className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 p-2 pr-3"
+                            >
+                              {provider.logo_url && (
+                                <img
+                                  src={provider.logo_url}
+                                  alt=""
+                                  className="h-8 w-8 rounded-lg object-cover"
+                                  loading="lazy"
+                                />
+                              )}
+                              <div>
+                                <p className="text-xs font-bold text-white">{provider.name}</p>
+                                <p className="text-[9px] uppercase tracking-wide text-gray-500">
+                                  {provider.methods.join(' • ')}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="mt-3 text-[9px] text-gray-500">
+                          Streaming availability data powered by JustWatch via TMDB. Quality depends on the provider and plan.
+                        </p>
+                      </section>
+                    )}
+
                     {/* Specifications HUD list */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 border border-white/5 rounded-2xl p-4 sm:p-6 bg-white/25 backdrop-blur-md glass-panel">
                       <div className="flex flex-col">
                         <span className="text-[10px] text-gray-500 font-extrabold uppercase mb-1">Status</span>
                         <span className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                          {mediaItem.status || 'Online / Ready'}
+                          {mediaItem.status || 'Metadata available'}
                         </span>
                       </div>
                       <div className="flex flex-col">
@@ -312,8 +365,8 @@ export default function Details() {
                         <span className="text-xs sm:text-sm font-bold text-white">{mediaItem.popularity} INDEX</span>
                       </div>
                       <div className="flex flex-col col-span-2 sm:col-span-1">
-                        <span className="text-[10px] text-gray-500 font-extrabold uppercase mb-1">Video Stream</span>
-                        <span className="text-xs sm:text-sm font-bold text-neon-cyan">MULTI-SERVER HLS 4K</span>
+                        <span className="text-[10px] text-gray-500 font-extrabold uppercase mb-1">Playback</span>
+                        <span className="text-xs sm:text-sm font-bold text-neon-cyan">LICENSED SOURCES ONLY</span>
                       </div>
                     </div>
                   </div>

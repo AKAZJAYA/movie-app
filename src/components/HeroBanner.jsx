@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Play, Plus, Check, Volume2, VolumeX, Info, Star } from 'lucide-react';
 import useAppStore from '../store/useAppStore';
 
-export default function HeroBanner({ movie, onOpenTrailer }) {
+export default function HeroBanner({ movie }) {
   const navigate = useNavigate();
   const [isMuted, setIsMuted] = useState(true);
   const { watchlist, addToWatchlist, removeFromWatchlist } = useAppStore();
@@ -68,7 +68,9 @@ export default function HeroBanner({ movie, onOpenTrailer }) {
             {/* Rating */}
             <div className="flex items-center gap-1.5 bg-black/45 px-2.5 py-1 rounded-lg border border-white/5">
               <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-              <span className="text-white font-extrabold">{movie.rating}</span>
+              <span className="text-white font-extrabold">
+                {Number.parseFloat(movie.rating) > 0 ? movie.rating : 'N/A'}
+              </span>
             </div>
             
             {/* Year */}
@@ -100,7 +102,7 @@ export default function HeroBanner({ movie, onOpenTrailer }) {
               className="flex items-center justify-center gap-2 py-3 px-6 sm:px-8 rounded-2xl btn-neon-purple text-sm sm:text-base font-bold text-white shadow-lg shadow-neon-purple/35"
             >
               <Play className="w-4 sm:w-5 h-4 sm:h-5 fill-white" />
-              <span>Play Movie</span>
+              <span>Watch options</span>
             </button>
 
             {/* Watchlist Toggle */}

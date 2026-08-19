@@ -1,0 +1,61 @@
+{
+  "movie:tt1234567": {
+    "title": "Example licensed movie",
+    "poster": "https://cdn.example.com/movies/example/poster.jpg",
+    "sources": [
+      {
+        "label": "480p",
+        "height": 480,
+        "bitrate": "1.2 Mbps",
+        "type": "video/mp4",
+        "url": "https://cdn.example.com/movies/example/480p.mp4"
+      },
+      {
+        "label": "720p",
+        "height": 720,
+        "bitrate": "2.5 Mbps",
+        "type": "video/mp4",
+        "url": "https://cdn.example.com/movies/example/720p.mp4"
+      },
+      {
+        "label": "1080p",
+        "height": 1080,
+        "bitrate": "5 Mbps",
+        "type": "video/mp4",
+        "url": "https://cdn.example.com/movies/example/1080p.mp4"
+      },
+      {
+        "label": "2K",
+        "height": 1440,
+        "bitrate": "10 Mbps",
+        "type": "video/mp4",
+        "url": "https://cdn.example.com/movies/example/1440p.mp4"
+      },
+      {
+        "label": "4K",
+        "height": 2160,
+        "bitrate": "20 Mbps",
+        "type": "video/mp4",
+        "url": "https://cdn.example.com/movies/example/2160p.mp4"
+      }
+    ],
+    "captions": [
+      {
+        "label": "English",
+        "srclang": "en",
+        "src": "https://cdn.example.com/movies/example/en.vtt",
+        "default": true
+      }
+    ]
+  },
+  "tv:tt7654321:1:1": {
+    "title": "Example licensed series — S1E1",
+    "sources": [
+      {
+        "label": "Auto",
+        "type": "application/vnd.apple.mpegurl",
+        "url": "https://cdn.example.com/series/example/s01e01/master.m3u8"
+      }
+    ]
+  }
+}

@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search as SearchIcon, Filter, X, Film, Monitor, Star, Clock, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, Filter, X, Film, Monitor, Clock, Sparkles } from 'lucide-react';
 
 // Data & Store
 import useAppStore from '../store/useAppStore';
@@ -134,7 +134,7 @@ export default function Search() {
           Discovery Deck
         </h1>
         <p className="text-sm text-gray-400 font-light">
-          Search over millions of movies, blockbusters, and TV series in master 1080p and 4K Blu-ray audio & video.
+          Search movie and TV metadata, then open licensed playback options for each title.
         </p>
       </div>
 

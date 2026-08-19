@@ -1,14 +1,14 @@
-import React from 'react';
+import { lazy, Suspense } from 'react';
 import { HashRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'framer-motion';
 
-// Pages
-import Home from './pages/Home';
-import Search from './pages/Search';
-import Details from './pages/Details';
-import Watchlist from './pages/Watchlist';
-import StreamingPlayer from './pages/StreamingPlayer';
+// Route-level splitting keeps the initial app bundle small.
+const Home = lazy(() => import('./pages/Home'));
+const Search = lazy(() => import('./pages/Search'));
+const Details = lazy(() => import('./pages/Details'));
+const Watchlist = lazy(() => import('./pages/Watchlist'));
+const StreamingPlayer = lazy(() => import('./pages/StreamingPlayer'));
 
 // Components
 import Navbar from './components/Navbar';
@@ -41,7 +41,8 @@ function AnimatedAppContent() {
       {/* Main Page Content Wrapper with Global Transitions */}
       <main className={`relative z-10 pb-24 md:pb-8 ${!isPlayerRoute ? 'pt-20 md:pt-24' : ''}`}>
         <AnimatePresence mode="wait">
-          <Routes location={location} key={location.pathname}>
+          <Suspense fallback={<RouteLoading isPlayerRoute={isPlayerRoute} />}>
+            <Routes location={location} key={location.pathname}>
             <Route 
               path="/" 
               element={
@@ -88,11 +89,20 @@ function AnimatedAppContent() {
                 </motion.div>
               } 
             />
-          </Routes>
+            </Routes>
+          </Suspense>
         </AnimatePresence>
       </main>
 
       {!isPlayerRoute && <BottomNav />}
+    </div>
+  );
+}
+
+function RouteLoading({ isPlayerRoute }) {
+  return (
+    <div className={`flex items-center justify-center ${isPlayerRoute ? 'h-screen' : 'min-h-[60vh]'}`}>
+      <div className="h-10 w-10 animate-spin rounded-full border-2 border-neon-purple/25 border-t-neon-cyan" />
     </div>
   );
 }

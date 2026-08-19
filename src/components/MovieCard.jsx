@@ -1,7 +1,6 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Star, Play, Plus, Check, Sparkles } from 'lucide-react';
+import { Star, Play, Plus, Check } from 'lucide-react';
 import useAppStore from '../store/useAppStore';
 
 export default function MovieCard({ item }) {
@@ -30,8 +29,10 @@ export default function MovieCard({ item }) {
 
   // Safe variables for data
   const genres = item.genres || (item.genre ? item.genre.split(', ').slice(0, 2) : ['Movie']);
-  const rating = item.rating && item.rating !== '0.0' ? parseFloat(item.rating).toFixed(1) : '7.5';
-  const quality = item.quality || (parseFloat(rating) >= 8.0 ? '4K BLU-RAY' : '1080p HD');
+  const numericRating = Number.parseFloat(item.rating);
+  const rating = Number.isFinite(numericRating) && numericRating > 0
+    ? numericRating.toFixed(1)
+    : null;
 
   return (
     <motion.div
@@ -42,12 +43,6 @@ export default function MovieCard({ item }) {
     >
       {/* Dynamic glow overlay */}
       <div className="absolute inset-0 bg-gradient-to-tr from-neon-purple/0 to-neon-cyan/0 group-hover:from-neon-purple/5 group-hover:to-neon-cyan/5 transition-all duration-500" />
-
-      {/* Top Quality Badge */}
-      <div className="absolute top-2.5 right-2.5 z-20 flex items-center gap-1 bg-black/75 backdrop-blur-md border border-neon-cyan/40 px-2 py-0.5 rounded text-[9px] font-black uppercase text-neon-cyan select-none shadow-md">
-        <Sparkles className="w-2.5 h-2.5 text-neon-cyan" />
-        <span>{quality}</span>
-      </div>
 
       {/* Poster Image */}
       <img
@@ -63,16 +58,13 @@ export default function MovieCard({ item }) {
       {/* Hover Information / Quick Actions Panel */}
       <div className="absolute inset-0 flex flex-col justify-end p-3 sm:p-4 text-left transform translate-y-2 md:translate-y-4 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100 transition-all duration-400 ease-[0.23,1,0.32,1]">
         
-        {/* Rating & Quality Badges */}
-        <div className="flex items-center justify-between mb-1.5">
+        {/* Rating */}
+        <div className="flex items-center mb-1.5">
           <div className="flex items-center gap-1">
             <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
-            <span className="text-xs font-extrabold text-white">{rating}</span>
-            <span className="text-[10px] text-gray-400">/ 10</span>
+            <span className="text-xs font-extrabold text-white">{rating || 'N/A'}</span>
+            {rating && <span className="text-[10px] text-gray-400">/ 10</span>}
           </div>
-          <span className="text-[9px] font-bold text-neon-cyan bg-neon-cyan/10 border border-neon-cyan/25 px-1.5 py-0.5 rounded">
-            {quality}
-          </span>
         </div>
 
         {/* Title */}
@@ -106,7 +98,7 @@ export default function MovieCard({ item }) {
             className="flex-1 flex items-center justify-center gap-1 py-1.5 sm:py-2 px-3 rounded-xl btn-neon-purple text-xs font-bold text-white shadow-md shadow-neon-purple/20"
           >
             <Play className="w-3 h-3 fill-white" />
-            <span>Watch HD</span>
+            <span>Watch options</span>
           </button>
 
           {/* Quick Watchlist Bookmark Button */}

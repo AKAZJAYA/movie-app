@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Cpu, Terminal, Play, RotateCcw, Sparkles } from 'lucide-react';
 import useAppStore from '../store/useAppStore';
-import { blockbusterMovies, blockbusterTV } from '../data/blockbusterDb';
+import { blockbusterMovies } from '../data/blockbusterDb';
 import { getTrending } from '../utils/api';
 
 export default function AIRecommender() {

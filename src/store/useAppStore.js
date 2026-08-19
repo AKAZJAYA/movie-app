@@ -29,7 +29,7 @@ export const useAppStore = create((set, get) => {
       subtitleLang: 'en',
       volume: 0.8,
       autoplayNext: true,
-      quality: '1080p'
+      quality: 'Auto'
     }),
 
     // Watchlist Actions
