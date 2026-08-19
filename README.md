@@ -15,6 +15,8 @@ The read access token is preferred; the API key is the fallback. If your Netlify
 
 TMDB supplies current titles, search, artwork, trailers, episodes, similar titles, and regional legal-provider availability. It does not supply commercial movie video files.
 
+The app also uses the no-key FMDB `/justwatch` endpoint described by `api-1.json` as an optional fallback for direct legal-provider links and the qualities advertised by those providers. It is proxied through `/api/watch-options`, is not used as a video source, and safely falls back to TMDB when unavailable. FMDB is an unofficial, best-effort service whose published terms limit it to personal, non-commercial use, so review `https://imdb.iamidiotareyoutoo.com/legal` before a public or commercial launch.
+
 ## Run locally
 
 1. Copy `.env.example` to `.env.local` and add your own TMDB credentials for local Netlify Function testing.

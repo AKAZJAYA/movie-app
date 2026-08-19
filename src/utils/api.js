@@ -18,6 +18,12 @@ const tmdbApi = axios.create({
   timeout: 15000,
 });
 
+// Optional legal-offer fallback backed by the API supplied in api-1.json.
+const watchOptionsApi = axios.create({
+  baseURL: '/api/watch-options',
+  timeout: 12000,
+});
+
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 const WATCH_REGION = (import.meta.env.VITE_WATCH_REGION || 'LK').toUpperCase();
 
@@ -158,6 +164,30 @@ const fetchTmdbList = async (action, params = {}, typeHint = '') => {
 };
 
 const cache = new Map();
+
+export const getWatchOptions = async ({ title, type, tmdbId, imdbId, signal }) => {
+  if (!title?.trim()) return { region: WATCH_REGION, title: null, offers: [] };
+
+  try {
+    const response = await watchOptionsApi.get('', {
+      params: {
+        title: title.trim(),
+        type,
+        tmdbId,
+        imdbId,
+        region: WATCH_REGION,
+      },
+      signal,
+    });
+    return {
+      region: response.data?.region || WATCH_REGION,
+      title: response.data?.title || null,
+      offers: Array.isArray(response.data?.offers) ? response.data.offers : [],
+    };
+  } catch {
+    return { region: WATCH_REGION, title: null, offers: [] };
+  }
+};
 
 /**
  * Curated IMDb IDs used when a metadata key is configured.

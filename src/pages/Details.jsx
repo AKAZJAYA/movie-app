@@ -6,7 +6,7 @@ import { Star, Play, Plus, Check, Clock, ExternalLink, Film, Sparkles } from 'lu
 
 // Data & Store
 import useAppStore from '../store/useAppStore';
-import { getMediaDetails, getTVSeasonEpisodes } from '../utils/api';
+import { getMediaDetails, getTVSeasonEpisodes, getWatchOptions } from '../utils/api';
 import { getStreamEntry } from '../utils/streamCatalog';
 import MovieCard from '../components/MovieCard';
 import TrailerModal from '../components/TrailerModal';
@@ -62,6 +62,29 @@ export default function Details() {
   const isBookmarked = mediaItem ? watchlist.some((x) => x.id === mediaItem.id) : false;
   const hasInAppStream = Boolean(defaultStreamEntry);
 
+  const { data: externalWatchOptions, isLoading: isExternalWatchOptionsLoading } = useQuery({
+    queryKey: [
+      'externalWatchOptions',
+      mediaItem?.title,
+      mediaItem?.type,
+      mediaItem?.tmdb_id,
+      mediaItem?.imdb_id,
+    ],
+    queryFn: ({ signal }) => getWatchOptions({
+      title: mediaItem.title,
+      type: mediaItem.type,
+      tmdbId: mediaItem.tmdb_id,
+      imdbId: mediaItem.imdb_id,
+      signal,
+    }),
+    enabled: Boolean(mediaItem?.title) && !hasInAppStream && !isStreamAvailabilityLoading,
+    retry: false,
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const directOffers = externalWatchOptions?.offers || [];
+  const preferredWatchUrl = directOffers[0]?.url || mediaItem?.watch_provider_link || '';
+
   const handlePlayNow = () => {
     if (!mediaItem) return;
     let url = `/player/${mediaItem.type || type || 'movie'}/${mediaItem.id}`;
@@ -90,8 +113,8 @@ export default function Details() {
       // Fall through to the provider/trailer options below.
     }
 
-    if (mediaItem?.watch_provider_link) {
-      window.location.assign(mediaItem.watch_provider_link);
+    if (preferredWatchUrl) {
+      window.location.assign(preferredWatchUrl);
       return;
     }
 
@@ -269,7 +292,7 @@ export default function Details() {
 
           {/* Core Action buttons with Pulse animations */}
           <div className="flex flex-wrap items-center gap-4 mb-8">
-            {isStreamAvailabilityLoading ? (
+            {isStreamAvailabilityLoading || isExternalWatchOptionsLoading ? (
               <button
                 type="button"
                 disabled
@@ -285,9 +308,9 @@ export default function Details() {
                 <Play className="w-5 h-5 fill-white" />
                 <span>Play now</span>
               </button>
-            ) : mediaItem.watch_provider_link ? (
+            ) : preferredWatchUrl ? (
               <a
-                href={mediaItem.watch_provider_link}
+                href={preferredWatchUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="flex items-center justify-center gap-2 py-3.5 px-8 rounded-2xl btn-neon-purple text-base font-extrabold text-white shadow-lg shadow-neon-purple/35"
@@ -314,7 +337,7 @@ export default function Details() {
               </button>
             )}
 
-            {mediaItem.trailer_url && (hasInAppStream || mediaItem.watch_provider_link) && (
+            {mediaItem.trailer_url && (hasInAppStream || preferredWatchUrl) && (
               <button
                 onClick={() => setIsTrailerOpen(true)}
                 className="flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-white/5 border border-neon-cyan/30 hover:border-neon-cyan hover:bg-neon-cyan/10 text-white transition-all duration-300 shadow-md"
@@ -395,18 +418,18 @@ export default function Details() {
                       {mediaItem.overview}
                     </p>
 
-                    {mediaItem.watch_providers?.length > 0 && (
+                    {(directOffers.length > 0 || mediaItem.watch_providers?.length > 0) && (
                       <section className="rounded-2xl border border-neon-cyan/20 bg-neon-cyan/5 p-4 sm:p-5">
                         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                           <div>
                             <h2 className="text-sm font-black text-white">Where to watch</h2>
                             <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                              Region: {mediaItem.watch_region}
+                              Region: {externalWatchOptions?.region || mediaItem.watch_region}
                             </p>
                           </div>
-                          {mediaItem.watch_provider_link && (
+                          {preferredWatchUrl && (
                             <a
-                              href={mediaItem.watch_provider_link}
+                              href={preferredWatchUrl}
                               target="_blank"
                               rel="noreferrer"
                               className="flex items-center gap-1.5 rounded-xl border border-neon-cyan/30 bg-neon-cyan/10 px-3 py-2 text-xs font-bold text-neon-cyan hover:border-neon-cyan"
@@ -415,8 +438,39 @@ export default function Details() {
                             </a>
                           )}
                         </div>
+                        {directOffers.length > 0 && (
+                          <div className="mb-3 grid gap-2 sm:grid-cols-2">
+                            {directOffers.slice(0, 8).map((offer) => (
+                              <a
+                                key={`${offer.name}-${offer.url}`}
+                                href={offer.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center justify-between gap-3 rounded-xl border border-neon-cyan/20 bg-black/30 p-3 text-left hover:border-neon-cyan/60"
+                              >
+                                <span>
+                                  <span className="block text-xs font-bold text-white">{offer.name}</span>
+                                  <span className="mt-0.5 block text-[9px] uppercase tracking-wide text-gray-500">
+                                    {offer.methods.join(' • ')}
+                                  </span>
+                                </span>
+                                <span className="flex items-center gap-1.5">
+                                  {offer.qualities.map((quality) => (
+                                    <span
+                                      key={quality}
+                                      className="rounded-md border border-neon-purple/30 bg-neon-purple/10 px-1.5 py-0.5 text-[9px] font-black text-neon-cyan"
+                                    >
+                                      {quality}
+                                    </span>
+                                  ))}
+                                  <ExternalLink className="h-3.5 w-3.5 text-gray-400" />
+                                </span>
+                              </a>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-2">
-                          {mediaItem.watch_providers.map((provider) => (
+                          {(mediaItem.watch_providers || []).map((provider) => (
                             <div
                               key={provider.id}
                               className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/25 p-2 pr-3"
@@ -439,7 +493,7 @@ export default function Details() {
                           ))}
                         </div>
                         <p className="mt-3 text-[9px] text-gray-500">
-                          Streaming availability data powered by JustWatch via TMDB. Quality depends on the provider and plan.
+                          Availability data comes from TMDB and the supplied FMDB/JustWatch lookup. Quality depends on the provider, plan, region, and device.
                         </p>
                       </section>
                     )}
