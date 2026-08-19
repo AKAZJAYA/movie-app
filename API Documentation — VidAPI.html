@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<!-- saved from url=(0021)https://vidapi.ru/api -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation — VidAPI</title>
+    <meta name="description" content="Complete API documentation for VidAPI embed endpoints. Movies and TV shows with IMDB/TMDB support and full customization.">
+    <meta name="robots" content="index, follow">
+    <link rel="stylesheet" href="./API Documentation — VidAPI_files/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="./API Documentation — VidAPI_files/style.css">
+<style>
+  .imageye-selected {
+    outline: 2px solid black !important;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+  }
+</style></head>
+<body>
+
+<nav class="va-nav" id="vaNav" style="">
+    <div class="va-container va-nav-inner">
+        <a href="https://vidapi.ru/" class="va-nav-brand">
+            <i class="bi bi-play-btn-fill"></i>
+            <span>VidAPI</span>
+        </a>
+
+        <button class="va-nav-toggle" id="vaNavToggle" aria-label="Toggle navigation">
+            <i class="bi bi-list"></i>
+        </button>
+
+        <div class="va-nav-links" id="vaNavLinks">
+            <a href="https://vidapi.ru/" class="">Home</a>
+            <a href="https://vidapi.ru/features" class="">Features</a>
+            <a href="https://vidapi.ru/api" class="active">API</a>
+            <a href="https://vidapi.ru/player" class="">Player</a>
+            <a href="https://vidapi.ru/faq" class="">FAQ</a>
+        </div>
+
+        <div class="va-nav-actions">
+            <a href="https://vdash.app/" class="va-btn va-btn-primary">Login</a>
+        </div>
+    </div>
+</nav>
+
+<main>
+<!-- API Hero -->
+<section class="va-hero" style="padding-bottom: 3rem;">
+    <div class="va-container">
+        <div class="va-badge"><i class="bi bi-book"></i> Documentation</div>
+        <h1>
+            <span class="va-gradient">API</span> Documentation
+        </h1>
+        <p>Complete guide to using the VidAPI embed endpoints. Movies and TV shows with IMDB and TMDB support.</p>
+    </div>
+</section>
+
+<!-- Movie Endpoint -->
+<section class="va-section-sm">
+    <div class="va-container">
+        <div class="va-endpoint va-fade-in visible">
+            <div class="va-endpoint-header">
+                <span class="va-method va-method-get">GET</span>
+                <span class="va-endpoint-url">/embed/movie/{id}</span>
+            </div>
+            <h3>Movie Embed</h3>
+            <p>Embed a movie player by providing an IMDB or TMDB ID.</p>
+
+            <div class="va-params-title">Parameters</div>
+            <div class="va-table-wrap">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id</code></td>
+                            <td>Yes</td>
+                            <td>IMDB ID (with <code>tt</code> prefix) or TMDB ID (numeric only)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Examples</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>IMDB ID</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/movie/tt23779058</code></pre>
+            </div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>TMDB ID</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/movie/1147301</code></pre>
+            </div>
+
+            <div class="va-params-title">HTML Usage</div>
+            <div class="va-code-block">
+                <div class="va-code-header"><span>HTML</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>&lt;iframe
+  src="https://vaplayer.ru/embed/movie/tt23779058"
+  width="100%" height="100%"
+  frameborder="0" allowfullscreen
+&gt;&lt;/iframe&gt;</code></pre>
+            </div>
+        </div>
+
+        <!-- TV Show Endpoint -->
+        <div class="va-endpoint va-fade-in">
+            <div class="va-endpoint-header">
+                <span class="va-method va-method-get">GET</span>
+                <span class="va-endpoint-url">/embed/tv/{id}/{season}/{episode}</span>
+            </div>
+            <h3>TV Show Episode Embed</h3>
+            <p>Embed a specific TV show episode. Supports multiple season/episode formats.</p>
+
+            <div class="va-params-title">Parameters</div>
+            <div class="va-table-wrap">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>id</code></td>
+                            <td>Yes</td>
+                            <td>IMDB ID (with <code>tt</code> prefix) or TMDB ID (numeric only)</td>
+                        </tr>
+                        <tr>
+                            <td><code>season</code></td>
+                            <td>Yes</td>
+                            <td>Season number</td>
+                        </tr>
+                        <tr>
+                            <td><code>episode</code></td>
+                            <td>Yes</td>
+                            <td>Episode number</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">URL Formats</div>
+            <div class="va-table-wrap" style="margin-bottom: 1rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Format</th>
+                            <th>Example</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Numeric</td>
+                            <td><code>/embed/tv/205715/1/1</code></td>
+                            <td>Season and episode as separate path segments</td>
+                        </tr>
+                        <tr>
+                            <td>SxxExx</td>
+                            <td><code>/embed/tv/205715/S01E01</code></td>
+                            <td>Combined season+episode (case insensitive)</td>
+                        </tr>
+                        <tr>
+                            <td>Dash</td>
+                            <td><code>/embed/tv/205715/1-1</code></td>
+                            <td>Season-episode with dash separator</td>
+                        </tr>
+                        <tr>
+                            <td>Query</td>
+                            <td><code>/embed/tv?tmdb=205715&amp;season=1&amp;episode=1</code></td>
+                            <td>All parameters as query string</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Examples</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>TMDB - Numeric</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/tv/205715/1/1</code></pre>
+            </div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>IMDB - SxxExx</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/tv/tt13159924/S01E01</code></pre>
+            </div>
+
+            <div class="va-params-title">HTML Usage</div>
+            <div class="va-code-block">
+                <div class="va-code-header"><span>HTML</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>&lt;iframe
+  src="https://vaplayer.ru/embed/tv/205715/1/1"
+  width="100%" height="100%"
+  frameborder="0" allowfullscreen
+&gt;&lt;/iframe&gt;</code></pre>
+            </div>
+        </div>
+
+        <!-- Query Parameters -->
+        <div class="va-endpoint va-fade-in">
+            <h3>Query Parameters</h3>
+            <p>All embed endpoints support the following optional query parameters for customization.</p>
+
+            <div class="va-params-title">UI &amp; Colors</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>color</code> / <code>primaryColor</code></td>
+                            <td>Hex</td>
+                            <td>Primary UI color (e.g., <code>#ff0000</code>)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Title &amp; Display</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>title</code></td>
+                            <td>String</td>
+                            <td>Custom title displayed in the player (URL encoded)</td>
+                        </tr>
+                        <tr>
+                            <td><code>poster</code></td>
+                            <td>URL</td>
+                            <td>Custom poster/thumbnail image URL</td>
+                        </tr>
+                        <tr>
+                            <td><code>showTitle</code></td>
+                            <td>Boolean</td>
+                            <td>Show or hide the title overlay (default: <code>true</code>)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Playback</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>startAt</code></td>
+                            <td>Float</td>
+                            <td>Start playback at specific time (seconds)</td>
+                        </tr>
+                        <tr>
+                            <td><code>resumeAt</code></td>
+                            <td>Float</td>
+                            <td>Resume playback from a specific timestamp in seconds (alias for <code>startAt</code>). Useful for resuming where a user left off.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Subtitles</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>sub_url</code></td>
+                            <td>URL</td>
+                            <td>URL-encoded remote subtitle file (.srt or .vtt). CORS not required — fetched server-side.</td>
+                        </tr>
+                        <tr>
+                            <td><code>sub_file</code></td>
+                            <td>URL</td>
+                            <td>Alias for <code>sub_url</code></td>
+                        </tr>
+                        <tr>
+                            <td><code>sub_label</code></td>
+                            <td>String</td>
+                            <td>Subtitle track label</td>
+                        </tr>
+                        <tr>
+                            <td><code>sub_lang</code></td>
+                            <td>String</td>
+                            <td>Subtitle language code (default: <code>en</code>)</td>
+                        </tr>
+                        <tr>
+                            <td><code>sub_default</code></td>
+                            <td>Boolean</td>
+                            <td>Set subtitle as default track</td>
+                        </tr>
+                        <tr>
+                            <td><code>ds_lang</code></td>
+                            <td>String</td>
+                            <td>Default subtitle language for OpenSubtitles auto-search. Accepts ISO 639-1 two-letter codes (e.g. <code>en</code>, <code>de</code>) or OpenSubtitles three-letter codes (e.g. <code>eng</code>, <code>ger</code>). The player will automatically search and activate subtitles in the specified language.</td>
+                        </tr>
+                        <tr>
+                            <td><code>lang</code></td>
+                            <td>String</td>
+                            <td>Alias for <code>ds_lang</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Remote Subtitle Examples</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Movie with remote subtitle</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/movie/tt23779058?sub_url=https%3A%2F%2Fexample.com%2Fsubs%2Fmovie.srt</code></pre>
+            </div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>TV episode with subtitle + default language</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/tv/1399/1/1?sub_url=https%3A%2F%2Fexample.com%2Fsubs%2Fs01e01.vtt&amp;ds_lang=de</code></pre>
+            </div>
+            <div class="va-code-block" style="margin-bottom: 1.5rem;">
+                <div class="va-code-header"><span>Movie with subtitle label and language</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/movie/385687?sub_url=https%3A%2F%2Fexample.com%2Ffrench.srt&amp;sub_label=French&amp;sub_lang=fr&amp;sub_default=true</code></pre>
+            </div>
+
+            <div class="va-params-title">Other</div>
+            <div class="va-table-wrap">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>thumbnails</code></td>
+                            <td>URL</td>
+                            <td>Thumbnail preview sprite URL for seek bar</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Example with Parameters</div>
+            <div class="va-code-block">
+                <div class="va-code-header"><span>Full Example</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/movie/tt23779058?primaryColor=%23e50914&amp;title=My%20Movie&amp;lang=en</code></pre>
+            </div>
+        </div>
+
+        <!-- Domain Whitelisting -->
+        <div class="va-endpoint va-fade-in">
+            <h3>Domain Whitelisting</h3>
+            <p>For security, VidAPI supports domain whitelisting. Configure your allowed domains in the dashboard under <strong>Domains → Allowed Sites</strong>.</p>
+            <ul class="va-feature-list" style="margin-top: 1rem;">
+                <li><i class="bi bi-check-circle-fill"></i> Only whitelisted domains can embed your player</li>
+                <li><i class="bi bi-check-circle-fill"></i> CSP <code>frame-ancestors</code> header enforced automatically</li>
+                <li><i class="bi bi-check-circle-fill"></i> Referer and Origin validation on the server side</li>
+                <li><i class="bi bi-check-circle-fill"></i> API key required for authenticated requests</li>
+            </ul>
+        </div>
+
+        <!-- Alternative Endpoint -->
+        <div class="va-endpoint va-fade-in">
+            <div class="va-endpoint-header">
+                <span class="va-method va-method-get">GET</span>
+                <span class="va-endpoint-url">/embed/movie?imdb={id} &nbsp;|&nbsp; /embed/tv?tmdb={id}&amp;season=1&amp;episode=1</span>
+            </div>
+            <h3>Query String Endpoint</h3>
+            <p>An alternative way to pass parameters via query string instead of URL path. Useful for programmatic embed URL construction.</p>
+
+            <div class="va-code-block" style="margin-top: 1rem;">
+                <div class="va-code-header"><span>Examples</span><button class="va-code-copy">Copy</button></div>
+                <pre><code># Movie by IMDB
+https://vaplayer.ru/embed/movie?imdb=tt23779058
+
+# Movie by TMDB
+https://vaplayer.ru/embed/movie?tmdb=1029880
+
+# TV Show by TMDB
+https://vaplayer.ru/embed/tv?tmdb=205715&amp;season=1&amp;episode=1
+
+# TV Show by IMDB
+https://vaplayer.ru/embed/tv?imdb=tt13159924&amp;season=1&amp;episode=1</code></pre>
+            </div>
+        </div>
+
+        <!-- Resume Playback -->
+        <div class="va-endpoint va-fade-in">
+            <h3>Resume Playback</h3>
+            <p>Use the <code>resumeAt</code> parameter to resume playback from where a user last stopped watching. Pass the timestamp in seconds.</p>
+
+            <div class="va-code-block" style="margin-top: 1rem; margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Resume at 5 minutes</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/movie/tt23779058?resumeAt=300</code></pre>
+            </div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Resume TV episode at 20 minutes</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vaplayer.ru/embed/tv/205715/1/3?resumeAt=1200</code></pre>
+            </div>
+
+            <div class="va-code-block">
+                <div class="va-code-header"><span>JavaScript — Save &amp; Restore Progress</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>// Listen for progress updates from the player
+window.addEventListener('message', (e) =&gt; {
+  if (e.data.type !== 'PLAYER_EVENT') return;
+  const { player_info, player_status, player_progress } = e.data.data;
+  if (player_status === 'playing') {
+    const id = player_info.imdb || player_info.tmdb;
+    localStorage.setItem(`progress_${id}`, player_progress);
+  }
+});
+
+// When creating the iframe, restore the saved position
+const saved = localStorage.getItem('progress_tt23779058');
+const src = `https://vaplayer.ru/embed/movie/tt23779058${saved ? `?resumeAt=${saved}` : ''}`;
+iframe.src = src;</code></pre>
+            </div>
+        </div>
+
+        <!-- Player Events -->
+        <div class="va-endpoint va-fade-in">
+            <h3><i class="bi bi-broadcast"></i> Player Events (postMessage)</h3>
+            <p>The player sends a single <code>PLAYER_EVENT</code> message to the parent window via <code>postMessage</code>. All player state — status, progress, and media info — is included in every event.</p>
+
+            <div class="va-params-title">Event Structure</div>
+            <div class="va-code-block" style="margin-bottom: 1.5rem;">
+                <div class="va-code-header"><span>PLAYER_EVENT payload</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>{
+  "type": "PLAYER_EVENT",
+  "data": {
+    "player_info": {
+      "imdb": "tt23779058",       // IMDB ID or null
+      "tmdb": null,               // TMDB ID or null
+      "mediaType": "movie",       // "movie" or "tv"
+      "season": null,             // season number (TV only)
+      "episode": null,            // episode number (TV only)
+      "title": "My Movie",        // title or null
+      "poster": "https://..."     // poster URL or null
+    },
+    "player_status": "playing",   // see statuses below
+    "player_progress": 125.4,     // current time in seconds
+    "player_duration": 7200,      // total duration in seconds
+    "quality": { "label": "1080p", "width": 1920, "height": 1080 },
+    "availableQualities": ["1080p", "720p", "480p", "360p"]
+  }
+}</code></pre>
+            </div>
+
+            <div class="va-params-title">Player Statuses</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Fired When</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>playing</code></td>
+                            <td>Playback starts or resumes, and every ~5 seconds during playback (progress updates)</td>
+                        </tr>
+                        <tr>
+                            <td><code>paused</code></td>
+                            <td>User pauses the video</td>
+                        </tr>
+                        <tr>
+                            <td><code>completed</code></td>
+                            <td>Video finishes playing (reached the end)</td>
+                        </tr>
+                        <tr>
+                            <td><code>seeked</code></td>
+                            <td>User seeks to a different position</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Listening for Events</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>JavaScript</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>window.addEventListener('message', (event) =&gt; {
+  if (event.data.type !== 'PLAYER_EVENT') return;
+  const { player_info, player_status, player_progress, player_duration } = event.data.data;
+
+  switch (player_status) {
+    case 'playing':
+      // Save progress for resume playback
+      console.log(`Playing: ${player_progress}s / ${player_duration}s`);
+      localStorage.setItem(`progress_${player_info.imdb || player_info.tmdb}`, player_progress);
+      break;
+
+    case 'paused':
+      console.log('Paused at', player_progress, 'seconds');
+      break;
+
+    case 'completed':
+      console.log('Video finished');
+      // Load next episode, update watch history, etc.
+      break;
+
+    case 'seeked':
+      console.log('Seeked to', player_progress, 'seconds');
+      break;
+  }
+});</code></pre>
+            </div>
+
+            <div class="va-code-block">
+                <div class="va-code-header"><span>Auto-load Next Episode</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>window.addEventListener('message', (event) =&gt; {
+  if (event.data.type !== 'PLAYER_EVENT') return;
+  if (event.data.data.player_status !== 'completed') return;
+
+  const { tmdb, imdb, season, episode } = event.data.data.player_info;
+  const id = tmdb || imdb;
+  const nextEp = parseInt(episode) + 1;
+  const iframe = document.querySelector('iframe');
+  iframe.src = `https://vaplayer.ru/embed/tv/${id}/${season}/${nextEp}`;
+});</code></pre>
+            </div>
+        </div>
+
+        <!-- Content Stats API -->
+        <div class="va-endpoint va-fade-in">
+            <div class="va-endpoint-header">
+                <span class="va-method va-method-get">GET</span>
+                <span class="va-endpoint-url">/imdb/api/?action=stats</span>
+            </div>
+            <h3>Content Library Stats</h3>
+            <p>Returns total counts of movies, TV shows, episodes, and people in the library. Response is cached and updated every 24 hours.</p>
+
+            <div class="va-code-block" style="margin-top: 1rem;">
+                <div class="va-code-header"><span>Response</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>{
+  "imdb": {
+    "total_titles": 12334462,
+    "movies": 739452,
+    "tv_series": 364158,
+    "episodes": 9521741,
+    "people": 15136678,
+    "ratings": 1643595
+  },
+  "content_library": {
+    "movies": 89155,
+    "tv_shows": 19012,
+    "episodes": 464692,
+    "people": 308139,
+    "collections": 4062
+  },
+  "cached": true,
+  "generated_at": "2026-03-05T14:39:56+00:00"
+}</code></pre>
+            </div>
+        </div>
+        <!-- Latest Movies Listing -->
+        <div class="va-endpoint va-fade-in">
+            <div class="va-endpoint-header">
+                <span class="va-method va-method-get">GET</span>
+                <span class="va-endpoint-url">/movies/latest/page-{PAGE}.json</span>
+            </div>
+            <h3>List Latest Movies</h3>
+            <p>Returns a paginated list of the most recently added movies with embed URLs, ratings, and metadata. 24 results per page.</p>
+
+            <div class="va-params-title">Parameters</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>PAGE</code></td>
+                            <td>Yes</td>
+                            <td>Page number (starts at 1)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Examples</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Page 1</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vidapi.ru/movies/latest/page-1.json</code></pre>
+            </div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Page 15</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vidapi.ru/movies/latest/page-15.json</code></pre>
+            </div>
+
+            <div class="va-params-title">Response</div>
+            <div class="va-code-block">
+                <div class="va-code-header"><span>JSON</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>{
+  "page": 1,
+  "per_page": 24,
+  "total": 89155,
+  "total_pages": 3715,
+  "items": [
+    {
+      "tmdb_id": "385687",
+      "imdb_id": "tt1517268",
+      "title": "Fast X",
+      "year": "2023",
+      "poster_url": "https://image.tmdb.org/t/p/original/...",
+      "rating": "7.1",
+      "genre": "Action, Crime, Thriller",
+      "popularity": "2847.12",
+      "type": "movie",
+      "embed_url": "https://vaplayer.ru/embed/movie/tt1517268"
+    }
+  ]
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- Latest TV Shows Listing -->
+        <div class="va-endpoint va-fade-in">
+            <div class="va-endpoint-header">
+                <span class="va-method va-method-get">GET</span>
+                <span class="va-endpoint-url">/tvshows/latest/page-{PAGE}.json</span>
+            </div>
+            <h3>List Latest TV Shows</h3>
+            <p>Returns a paginated list of the most recently added TV shows with season/episode counts and embed URLs. 24 results per page.</p>
+
+            <div class="va-params-title">Parameters</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>PAGE</code></td>
+                            <td>Yes</td>
+                            <td>Page number (starts at 1)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Examples</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Page 1</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vidapi.ru/tvshows/latest/page-1.json</code></pre>
+            </div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Page 15</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vidapi.ru/tvshows/latest/page-15.json</code></pre>
+            </div>
+
+            <div class="va-params-title">Response</div>
+            <div class="va-code-block">
+                <div class="va-code-header"><span>JSON</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>{
+  "page": 1,
+  "per_page": 24,
+  "total": 19012,
+  "total_pages": 793,
+  "items": [
+    {
+      "tmdb_id": "1399",
+      "imdb_id": "tt0944947",
+      "title": "Game of Thrones",
+      "year": "2011",
+      "poster_url": "https://image.tmdb.org/t/p/original/...",
+      "rating": "8.4",
+      "genre": "Sci-Fi &amp; Fantasy, Drama, Action &amp; Adventure",
+      "popularity": "985.45",
+      "type": "tv",
+      "embed_url": "https://vaplayer.ru/embed/tv/tt0944947"
+    }
+  ]
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- Latest Episodes Listing -->
+        <div class="va-endpoint va-fade-in">
+            <div class="va-endpoint-header">
+                <span class="va-method va-method-get">GET</span>
+                <span class="va-endpoint-url">/episodes/latest/page-{PAGE}.json</span>
+            </div>
+            <h3>List Latest Episodes</h3>
+            <p>Returns a paginated list of the most recently added TV episodes with the parent show info and direct embed URLs. 24 results per page.</p>
+
+            <div class="va-params-title">Parameters</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>PAGE</code></td>
+                            <td>Yes</td>
+                            <td>Page number (starts at 1)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Examples</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Page 1</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vidapi.ru/episodes/latest/page-1.json</code></pre>
+            </div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Page 25</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vidapi.ru/episodes/latest/page-25.json</code></pre>
+            </div>
+
+            <div class="va-params-title">Response</div>
+            <div class="va-code-block">
+                <div class="va-code-header"><span>JSON</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>{
+  "page": 1,
+  "per_page": 24,
+  "total": 464692,
+  "total_pages": 19363,
+  "items": [
+    {
+      "show_tmdb_id": "1399",
+      "season_number": "1",
+      "episode_number": "1",
+      "episode_title": "Winter Is Coming",
+      "air_date": "2011-04-17",
+      "show_title": "Game of Thrones",
+      "show_imdb_id": "tt0944947",
+      "type": "episode",
+      "embed_url": "https://vaplayer.ru/embed/tv/tt0944947/1/1"
+    }
+  ]
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- Usage Tips -->
+        <div class="va-endpoint va-fade-in">
+            <h3><i class="bi bi-lightbulb"></i> Listing API Tips</h3>
+            <p>Use the listing endpoints to keep your content catalog in sync or build custom discovery pages.</p>
+
+            <div class="va-params-title">Pagination</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>page</code></td>
+                            <td>Integer</td>
+                            <td>Current page number</td>
+                        </tr>
+                        <tr>
+                            <td><code>per_page</code></td>
+                            <td>Integer</td>
+                            <td>Items per page (24)</td>
+                        </tr>
+                        <tr>
+                            <td><code>total</code></td>
+                            <td>Integer</td>
+                            <td>Total items across all pages</td>
+                        </tr>
+                        <tr>
+                            <td><code>total_pages</code></td>
+                            <td>Integer</td>
+                            <td>Total number of pages available</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Fetch all pages (JavaScript)</div>
+            <div class="va-code-block">
+                <div class="va-code-header"><span>JavaScript</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>async function fetchLatestMovies(maxPages = 5) {
+  const allMovies = [];
+  for (let page = 1; page &lt;= maxPages; page++) {
+    const res = await fetch(`https://vidapi.ru/movies/latest/page-${page}.json`);
+    const data = await res.json();
+    allMovies.push(...data.items);
+    if (page &gt;= data.total_pages) break;
+  }
+  return allMovies;
+}</code></pre>
+            </div>
+        </div>
+
+        <!-- ID Lists -->
+        <div class="va-endpoint va-fade-in">
+            <div class="va-endpoint-header">
+                <span class="va-method va-method-get">GET</span>
+                <span class="va-endpoint-url">/ids/{filename}.txt</span>
+            </div>
+            <h3>Content ID Lists</h3>
+            <p>Download plain-text files containing every IMDB and TMDB ID available on VidAPI. One ID per line, updated daily. Useful for syncing your catalog or building import scripts.</p>
+
+            <div class="va-params-title">Available Files</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Content</th>
+                            <th>Format</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code><a href="https://vidapi.ru/ids/movie_list_imdb.txt" style="color: var(--accent);">movie_list_imdb.txt</a></code></td>
+                            <td>Movie IMDB IDs</td>
+                            <td><code>tt1234567</code></td>
+                        </tr>
+                        <tr>
+                            <td><code><a href="https://vidapi.ru/ids/movie_list_tmdb.txt" style="color: var(--accent);">movie_list_tmdb.txt</a></code></td>
+                            <td>Movie TMDB IDs</td>
+                            <td><code>385687</code></td>
+                        </tr>
+                        <tr>
+                            <td><code><a href="https://vidapi.ru/ids/tv_list_imdb.txt" style="color: var(--accent);">tv_list_imdb.txt</a></code></td>
+                            <td>TV Show IMDB IDs</td>
+                            <td><code>tt0944947</code></td>
+                        </tr>
+                        <tr>
+                            <td><code><a href="https://vidapi.ru/ids/tv_list_tmdb.txt" style="color: var(--accent);">tv_list_tmdb.txt</a></code></td>
+                            <td>TV Show TMDB IDs</td>
+                            <td><code>1399</code></td>
+                        </tr>
+                        <tr>
+                            <td><code><a href="https://vidapi.ru/ids/eps_list_tmdb.txt" style="color: var(--accent);">eps_list_tmdb.txt</a></code></td>
+                            <td>Episode TMDB IDs</td>
+                            <td><code>314541_1x3</code></td>
+                        </tr>
+                        <tr>
+                            <td><code><a href="https://vidapi.ru/ids/eps_list_imdb.txt" style="color: var(--accent);">eps_list_imdb.txt</a></code></td>
+                            <td>Episode IMDB IDs</td>
+                            <td><code>tt0944947_1x1</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Examples</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Download</span><button class="va-code-copy">Copy</button></div>
+                <pre><code>https://vidapi.ru/ids/movie_list_imdb.txt
+https://vidapi.ru/ids/movie_list_tmdb.txt
+https://vidapi.ru/ids/tv_list_imdb.txt
+https://vidapi.ru/ids/tv_list_tmdb.txt
+https://vidapi.ru/ids/eps_list_tmdb.txt
+https://vidapi.ru/ids/eps_list_imdb.txt</code></pre>
+            </div>
+
+            <p style="margin-top: 1rem;"><a href="https://vidapi.ru/ids/" style="font-weight: 600;"><i class="bi bi-box-arrow-up-right"></i> Browse all ID lists with file sizes and counts →</a></p>
+        </div>
+
+        <!-- WordPress Plugins -->
+        <div class="va-endpoint va-fade-in">
+            <h3><i class="bi bi-wordpress"></i> WordPress Plugins</h3>
+            <p>Use VidAPI directly inside your WordPress site with our official plugins for the most popular streaming themes. Install the plugin, enter your API key, and your theme will automatically use VidAPI embed URLs for all movies and TV shows.</p>
+
+            <div class="va-params-title" style="margin-top: 1.5rem;">Available Plugins</div>
+            <div class="va-table-wrap" style="margin-bottom: 1.5rem;">
+                <table class="va-table">
+                    <thead>
+                        <tr>
+                            <th>Plugin</th>
+                            <th>Compatible Theme</th>
+                            <th>Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>VidAPI for DooPlay</strong></td>
+                            <td>DooPlay WordPress Theme</td>
+                            <td><a href="https://mega.nz/file/evhCUSyZ#LgPAnhSWiQL-bdVxCuMjbfBbeE_FUsj_8tW-GSgvQ3E" target="_blank" style="color: var(--accent); font-weight: 600;"><i class="bi bi-download"></i> Download .zip</a></td>
+                        </tr>
+                        <tr>
+                            <td><strong>VidAPI for PsyPlay</strong></td>
+                            <td>PsyPlay WordPress Theme</td>
+                            <td><a href="https://mega.nz/file/W6YDwJCa#zp9xsv9HHxAk-RYPgHUkGmT2pcoks8oR7u1bAqw1CJ4" target="_blank" style="color: var(--accent); font-weight: 600;"><i class="bi bi-download"></i> Download .zip</a></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="va-params-title">Installation</div>
+            <div class="va-code-block" style="margin-bottom: 0.75rem;">
+                <div class="va-code-header"><span>Steps</span></div>
+                <pre><code>1. Download the plugin .zip file for your theme
+2. Go to WordPress Admin → Plugins → Add New → Upload Plugin
+3. Upload the .zip file and click Install Now
+4. Activate the plugin
+5. Go to Settings → VidAPI and enter your API key</code></pre>
+            </div>
+
+            <ul class="va-feature-list" style="margin-top: 1rem;">
+                <li><i class="bi bi-check-circle-fill"></i> Automatically replaces player sources with VidAPI embed URLs</li>
+                <li><i class="bi bi-check-circle-fill"></i> Works with both IMDB and TMDB IDs stored in your WordPress posts</li>
+                <li><i class="bi bi-check-circle-fill"></i> No coding required — configure via the WordPress admin panel</li>
+                <li><i class="bi bi-check-circle-fill"></i> Supports all VidAPI query parameters (color, subtitles, resumeAt, etc.)</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="va-section" style="background: var(--bg-surface);">
+    <div class="va-container" style="text-align: center;">
+        <div class="va-fade-in">
+            <h2 style="font-size: 2rem; font-weight: 800; margin-bottom: 1rem;">Try It Now</h2>
+            <p style="color: var(--text-secondary); font-size: 1.05rem; max-width: 480px; margin: 0 auto 2rem;">Test the embed player with any IMDB or TMDB ID in our interactive player.</p>
+            <a href="https://vidapi.ru/player" class="va-btn va-btn-primary va-btn-lg"><i class="bi bi-play-fill"></i> Open Test Player</a>
+        </div>
+    </div>
+</section>
+</main>
+
+<footer class="va-footer">
+    <div class="va-container">
+        <div class="va-footer-bottom" style="border-top: none; padding-top: 0;">
+            <span>© 2026 VidAPI. All rights reserved.</span>
+            <span>VidAPI is a content aggregator. We do not host or store copyrighted content.</span>
+        </div>
+    </div>
+</footer>
+
+<script src="./API Documentation — VidAPI_files/main.js"></script>
+<script defer="" src="./API Documentation — VidAPI_files/v833ccba57c9e4d2798f2e76cebdd09a11778172276447" integrity="sha512-57MDmcccJXYtNnH+ZiBwzC4jb2rvgVCEokYN+L/nLlmO8rfYT/gIpW2A569iJ/3b+0UEasghjuZH/ma3wIs/EQ==" data-cf-beacon="{&quot;version&quot;:&quot;2024.11.0&quot;,&quot;token&quot;:&quot;44ce6b5c80ae4b77a2bfc7aec7a7c81d&quot;,&quot;r&quot;:1,&quot;server_timing&quot;:{&quot;name&quot;:{&quot;cfCacheStatus&quot;:true,&quot;cfEdge&quot;:true,&quot;cfExtPri&quot;:true,&quot;cfL4&quot;:true,&quot;cfOrigin&quot;:true,&quot;cfSpeedBrain&quot;:true},&quot;location_startswith&quot;:null}}" crossorigin="anonymous"></script>
+
+
+<div id="give-freely-root-kkkbiiikppgjdiebcabomlbidfodipjg" class="give-freely-root" data-extension-id="kkkbiiikppgjdiebcabomlbidfodipjg" data-extension-name="Substital: Add subtitles to videos and movies" style="display: block;"><template shadowrootmode="open"><style>
+  :host {
+    all: initial;
+  }
+
+  .gf-scroll-remove::-webkit-scrollbar {
+    border-radius-bottom-right: 15px;
+  }
+
+  button {
+    cursor: pointer;
+    transition: transform 0.1s ease;
+  }
+
+  button:active {
+    transform: scale(0.98);
+  }
+
+  .give-freely-close-button:hover {
+    opacity: 0.7;
+  }
+
+  input[type="radio"] {
+    margin-right: 8px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #e5e5e5;
+    margin: 1em 0;
+  }
+
+  @media (max-width: 600px), (max-height: 480px) {
+    #give-freely-checkout-popup {
+      display: none !important;
+    }
+  }
+
+  dialog::backdrop  {
+    background-color: rgba(180, 180, 180, 0.8);
+  }
+
+  dialog.backdrop-hidden::backdrop  {
+    background-color: transparent;
+  }
+</style><div><div class="gf-app"></div></div></template></div></body></html>
