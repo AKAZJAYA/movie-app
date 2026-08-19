@@ -27,12 +27,12 @@ const parsePositiveInteger = (value, fallback = 1) => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
 
-// Available streaming servers with fast fallbacks
+// Available streaming servers that stream the exact full movie and TV series
 const STREAM_SERVERS = [
   {
     id: 'vidapi',
     name: 'Server 1 (VidAPI)',
-    tag: 'Recommended • Fast HD',
+    tag: 'Primary HD • Multi-Subtitles',
     quality: '1080p / 4K',
     buildUrl: ({ tmdbId, imdbId, type, season, episode, title, resumeAt }) => {
       const targetId = imdbId || tmdbId;
@@ -47,7 +47,7 @@ const STREAM_SERVERS = [
   {
     id: 'vidsrc_to',
     name: 'Server 2 (VidSrc To)',
-    tag: 'High Speed HD',
+    tag: 'High Speed HD Stream',
     quality: '1080p',
     buildUrl: ({ tmdbId, imdbId, type, season, episode }) => {
       const targetId = imdbId || tmdbId;
@@ -74,7 +74,7 @@ const STREAM_SERVERS = [
   {
     id: 'vidsrc_me',
     name: 'Server 4 (VidSrc Me)',
-    tag: 'Alternative CDN',
+    tag: 'Alternative Stream CDN',
     quality: '1080p / 720p',
     buildUrl: ({ tmdbId, imdbId, type, season, episode }) => {
       const imdbPart = imdbId ? `imdb=${imdbId}&` : '';
@@ -87,7 +87,7 @@ const STREAM_SERVERS = [
   {
     id: 'smashy',
     name: 'Server 5 (SmashyStream)',
-    tag: 'Multi-Source HD',
+    tag: 'Multi-Source HD Player',
     quality: '1080p',
     buildUrl: ({ tmdbId, imdbId, type, season, episode }) => {
       const targetId = imdbId || tmdbId;
@@ -100,7 +100,7 @@ const STREAM_SERVERS = [
   {
     id: 'autoembed',
     name: 'Server 6 (AutoEmbed)',
-    tag: 'Global CDN',
+    tag: 'Global CDN Player',
     quality: '1080p HD',
     buildUrl: ({ tmdbId, imdbId, type, season, episode }) => {
       const targetId = tmdbId || imdbId;
@@ -129,13 +129,18 @@ export default function LicensedStreamingPlayer() {
   const { type, id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { playbackProgress, saveProgress } = useAppStore();
 
   const seasonParam = searchParams.get('season');
   const episodeParam = searchParams.get('episode');
   const currentSeason = parsePositiveInteger(seasonParam, 1);
   const currentEpisode = parsePositiveInteger(episodeParam, 1);
 
+  // Read saved progress once on mount without causing re-render loops
+  const initialSavedProgress = useRef(
+    useAppStore.getState().playbackProgress[id]?.progress || 0,
+  ).current;
+
+  // Defaults to Server 1 (VidAPI) which streams the exact requested movie
   const [useDirectStream, setUseDirectStream] = useState(false);
   const [selectedServerIndex, setSelectedServerIndex] = useState(0);
   const [showServerMenu, setShowServerMenu] = useState(false);
@@ -143,7 +148,6 @@ export default function LicensedStreamingPlayer() {
   const [isIframeLoading, setIsIframeLoading] = useState(true);
   const [countdown, setCountdown] = useState(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [iframeKey, setIframeKey] = useState(0);
 
   const playerContainerRef = useRef(null);
   const lastSaveTimeRef = useRef(0);
@@ -165,7 +169,7 @@ export default function LicensedStreamingPlayer() {
     staleTime: 1000 * 60 * 30,
   });
 
-  // Check for local direct stream entry in streams.json
+  // Check for custom direct stream entry in streams.json (if configured by user)
   const { data: directStreamEntry } = useQuery({
     queryKey: ['streamEntry', isTV ? 'tv' : 'movie', id, currentSeason, currentEpisode],
     queryFn: ({ signal }) => getStreamEntry({
@@ -175,21 +179,11 @@ export default function LicensedStreamingPlayer() {
       episode: currentEpisode,
       signal,
     }),
-    retry: false,
-    staleTime: 1000 * 60,
+    staleTime: 1000 * 60 * 30,
   });
 
-  const hasDirectStream = Boolean(directStreamEntry?.sources?.length);
+  const hasCustomDirectStream = Boolean(directStreamEntry?.sources?.length);
   const activeDirectSource = directStreamEntry?.sources?.[0] || null;
-
-  // If a direct stream exists, default to direct stream mode on initial load
-  useEffect(() => {
-    if (hasDirectStream) {
-      setUseDirectStream(true);
-    }
-  }, [hasDirectStream]);
-
-  const savedProgress = playbackProgress[id]?.progress || 0;
 
   // Build current progress metadata item
   const buildProgressItem = useCallback(() => ({
@@ -200,11 +194,11 @@ export default function LicensedStreamingPlayer() {
     backdrop_url: mediaDetails?.backdrop_url,
     year: mediaDetails?.year,
     rating: mediaDetails?.rating,
-    server: useDirectStream ? 'Direct 4K/1080p Master' : (STREAM_SERVERS[selectedServerIndex]?.name || 'Nebula Stream'),
+    server: useDirectStream ? 'Custom Direct Stream' : (STREAM_SERVERS[selectedServerIndex]?.name || 'Nebula Stream'),
     ...(isTV ? { season: currentSeason, episode: currentEpisode } : {}),
   }), [id, mediaDetails, isTV, useDirectStream, selectedServerIndex, currentSeason, currentEpisode]);
 
-  // Compute embed URL for the active server
+  // Compute embed URL for the active streaming server
   const activeServer = STREAM_SERVERS[selectedServerIndex] || STREAM_SERVERS[0];
   const tmdbId = mediaDetails?.tmdb_id || (id && !String(id).startsWith('tt') ? id : null);
   const imdbId = mediaDetails?.imdb_id || (id && String(id).startsWith('tt') ? id : null);
@@ -217,15 +211,9 @@ export default function LicensedStreamingPlayer() {
       season: currentSeason,
       episode: currentEpisode,
       title: mediaDetails?.title || '',
-      resumeAt: savedProgress,
+      resumeAt: initialSavedProgress,
     });
-  }, [activeServer, tmdbId, imdbId, id, isTV, currentSeason, currentEpisode, mediaDetails?.title, savedProgress]);
-
-  // Reset loading state when server, episode, or URL changes
-  useEffect(() => {
-    setIsIframeLoading(true);
-    setIframeKey((prev) => prev + 1);
-  }, [embedUrl, useDirectStream]);
+  }, [activeServer, tmdbId, imdbId, id, isTV, currentSeason, currentEpisode, mediaDetails?.title, initialSavedProgress]);
 
   // Listen for VidAPI (VAPlayer) postMessage PLAYER_EVENT
   useEffect(() => {
@@ -238,10 +226,10 @@ export default function LicensedStreamingPlayer() {
         const durationSec = Number.parseFloat(player_duration) || 0;
 
         const now = Date.now();
-        if (now - lastSaveTimeRef.current > 4000) {
+        if (now - lastSaveTimeRef.current > 8000) {
           lastSaveTimeRef.current = now;
           if (durationSec > 0 && progressSec > 0) {
-            saveProgress(id, progressSec, durationSec, buildProgressItem());
+            useAppStore.getState().saveProgress(id, progressSec, durationSec, buildProgressItem());
           }
         }
       }
@@ -253,7 +241,7 @@ export default function LicensedStreamingPlayer() {
 
     window.addEventListener('message', handlePlayerMessage);
     return () => window.removeEventListener('message', handlePlayerMessage);
-  }, [id, isTV, saveProgress, buildProgressItem]);
+  }, [id, isTV, buildProgressItem]);
 
   // Next & Previous episode calculations
   const nextEpisodeNumber = useMemo(() => {
@@ -422,9 +410,9 @@ export default function LicensedStreamingPlayer() {
               {useDirectStream ? (
                 <>
                   <Zap className="h-4 w-4 text-neon-cyan fill-neon-cyan" />
-                  <span className="hidden md:inline">Direct Master</span>
+                  <span className="hidden md:inline">Custom Stream</span>
                   <span className="rounded bg-neon-cyan/20 px-1.5 py-0.5 text-[9px] font-bold text-neon-cyan">
-                    4K/1080p
+                    Direct
                   </span>
                 </>
               ) : (
@@ -459,8 +447,8 @@ export default function LicensedStreamingPlayer() {
                   </div>
 
                   <div className="space-y-1.5 max-h-72 overflow-y-auto no-scrollbar">
-                    {/* Direct High-Bitrate Stream Option if configured */}
-                    {hasDirectStream && (
+                    {/* Custom Direct Stream option if provided in streams.json */}
+                    {hasCustomDirectStream && (
                       <button
                         type="button"
                         onClick={() => {
@@ -475,13 +463,13 @@ export default function LicensedStreamingPlayer() {
                       >
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-extrabold text-white">Direct 4K/1080p Master</span>
+                            <span className="text-xs font-extrabold text-white">Custom Direct Stream</span>
                             <span className="rounded bg-neon-cyan/20 px-1 py-0.2 text-[8px] font-black text-neon-cyan">
-                              ULTRA HD
+                              DIRECT
                             </span>
                           </div>
                           <span className="block text-[10px] text-gray-400">
-                            Adaptive Bitrate HLS • 4K/1080p/720p
+                            Loaded from streams.json
                           </span>
                         </div>
                         {useDirectStream && <Check className="h-4 w-4 text-neon-cyan flex-shrink-0" />}
@@ -497,6 +485,7 @@ export default function LicensedStreamingPlayer() {
                           onClick={() => {
                             setUseDirectStream(false);
                             setSelectedServerIndex(index);
+                            setIsIframeLoading(true);
                             setShowServerMenu(false);
                           }}
                           className={`flex w-full items-center justify-between rounded-2xl p-2.5 text-left transition-all ${
@@ -544,22 +533,22 @@ export default function LicensedStreamingPlayer() {
         </div>
       </div>
 
-      {/* 2. MAIN STREAMING PLAYER (Direct HLS/MP4 or Multi-Server Embed) */}
+      {/* 2. MAIN STREAMING PLAYER (Streams the exact requested movie) */}
       <div className="relative h-full w-full bg-black">
         {useDirectStream && activeDirectSource ? (
           <HlsDirectPlayer
-            key={`direct-${activeDirectSource.url}`}
+            key={`direct-${activeDirectSource.url}-${id}`}
             src={activeDirectSource.url}
             poster={directStreamEntry?.poster || mediaDetails?.backdrop_url || mediaDetails?.poster_url}
             title={mediaDetails?.title}
             captions={directStreamEntry?.captions || []}
-            initialTime={savedProgress}
+            initialTime={initialSavedProgress}
             onTimeUpdate={(curr, dur) => {
               const now = Date.now();
-              if (now - lastSaveTimeRef.current > 5000) {
+              if (now - lastSaveTimeRef.current > 8000) {
                 lastSaveTimeRef.current = now;
                 if (dur > 0 && curr > 0) {
-                  saveProgress(id, curr, dur, buildProgressItem());
+                  useAppStore.getState().saveProgress(id, curr, dur, buildProgressItem());
                 }
               }
             }}
@@ -584,14 +573,14 @@ export default function LicensedStreamingPlayer() {
                   Connecting to {activeServer.name}...
                 </p>
                 <p className="mt-1 text-[11px] text-gray-400">
-                  Loading high-definition stream • Press S to switch server
+                  Loading {mediaDetails?.title || 'Movie'} • Press S to switch server
                 </p>
               </div>
             )}
 
-            {/* Embedded Streaming Frame */}
+            {/* Embedded Streaming Frame playing the exact requested movie */}
             <iframe
-              key={iframeKey}
+              key={`embed-${activeServer.id}-${id}-${currentSeason}-${currentEpisode}`}
               src={embedUrl}
               title={mediaDetails?.title || 'Movie Player'}
               className="h-full w-full border-0 bg-black"

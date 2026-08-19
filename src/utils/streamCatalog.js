@@ -26,20 +26,24 @@ export const getStreamKey = ({ type, id, season, episode }) => {
 
 export const getStreamEntry = async ({ type, id, season, episode, signal }) => {
   const catalogUrl = import.meta.env.VITE_STREAM_CATALOG_URL || DEFAULT_CATALOG_URL;
-  const response = await fetch(catalogUrl, {
-    signal,
-    cache: 'no-store',
-    credentials: 'same-origin',
-  });
 
-  if (response.status === 404) return null;
-  if (!response.ok) {
-    throw new Error(`Stream catalog request failed (${response.status})`);
+  try {
+    const response = await fetch(catalogUrl, {
+      signal,
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+
+    if (response.ok) {
+      const catalog = await response.json();
+      const key = getStreamKey({ type, id, season, episode });
+      return normalizeEntry(catalog[key]);
+    }
+  } catch {
+    // If streams.json is not available, return null
   }
 
-  const catalog = await response.json();
-  const key = getStreamKey({ type, id, season, episode });
-  return normalizeEntry(catalog[key]);
+  return null;
 };
 
 export const isHlsSource = (source) => (
@@ -49,7 +53,8 @@ export const isHlsSource = (source) => (
 
 export const qualityLabelFromHeight = (height) => {
   if (!height) return 'Unknown';
-  if (height >= 2160) return '4K';
-  if (height >= 1440) return '2K';
+  if (height >= 2160) return '4K Ultra HD';
+  if (height >= 1440) return '2K QHD';
+  if (height >= 1080) return '1080p FHD';
   return `${height}p`;
 };

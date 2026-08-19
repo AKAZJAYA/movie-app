@@ -8,7 +8,6 @@ import {
   Minimize2,
   Settings,
   Check,
-  RotateCcw,
   Gauge,
   Sparkles,
 } from 'lucide-react';
@@ -23,8 +22,12 @@ const loadHlsScript = () => {
     }
     const existingScript = document.getElementById('hls-script');
     if (existingScript) {
-      existingScript.addEventListener('load', () => resolve(window.Hls));
-      existingScript.addEventListener('error', reject);
+      if (window.Hls) {
+        resolve(window.Hls);
+      } else {
+        existingScript.addEventListener('load', () => resolve(window.Hls));
+        existingScript.addEventListener('error', reject);
+      }
       return;
     }
     const script = document.createElement('script');
@@ -62,6 +65,9 @@ export default function HlsDirectPlayer({
   const hlsRef = useRef(null);
   const containerRef = useRef(null);
   const controlsTimeoutRef = useRef(null);
+  const bufferTimeoutRef = useRef(null);
+  const hasAppliedInitialTimeRef = useRef(false);
+  const initialTimeRef = useRef(initialTime);
 
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -69,19 +75,20 @@ export default function HlsDirectPlayer({
   const [volume, setVolume] = useState(0.8);
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [levels, setLevels] = useState([]); // [{ height, bitrate, index }]
+  const [levels, setLevels] = useState([]); // [{ height, bitrate, index, label }]
   const [selectedLevel, setSelectedLevel] = useState(-1); // -1 is Auto
   const [showSettings, setShowSettings] = useState(false);
   const [showControls, setShowControls] = useState(true);
   const [isBuffering, setIsBuffering] = useState(true);
   const [playbackRate, setPlaybackRate] = useState(1);
 
-  // Initialize Video & HLS
+  // Initialize Video & HLS (Only re-runs if src changes, NEVER on progress updates)
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
 
     let isSubscribed = true;
+    hasAppliedInitialTimeRef.current = false;
     setIsBuffering(true);
 
     const isHlsUrl = src.includes('.m3u8') || src.startsWith('blob:');
@@ -98,6 +105,11 @@ export default function HlsDirectPlayer({
           const hls = new Hls({
             enableWorker: true,
             lowLatencyMode: false,
+            backBufferLength: 90,
+            maxBufferLength: 60,
+            maxMaxBufferLength: 120,
+            maxBufferSize: 60 * 1000 * 1000,
+            maxBufferHole: 0.5,
             startLevel: -1, // Auto
           });
 
@@ -111,32 +123,40 @@ export default function HlsDirectPlayer({
               index,
               height: lvl.height || 0,
               bitrate: lvl.bitrate ? `${(lvl.bitrate / 1000000).toFixed(1)} Mbps` : '',
-              label: lvl.height >= 2160 ? '4K Ultra HD' : lvl.height >= 1440 ? '2K QHD' : lvl.height >= 1080 ? '1080p FHD' : lvl.height ? `${lvl.height}p` : `Stream ${index + 1}`,
+              label: lvl.height >= 2160 ? '4K Ultra HD' : lvl.height >= 1440 ? '2K QHD' : lvl.height >= 1080 ? '1080p FHD' : lvl.height ? `${lvl.height}p` : `Resolution ${index + 1}`,
             }));
             setLevels(parsedLevels);
             setIsBuffering(false);
 
-            if (initialTime > 0) {
-              video.currentTime = initialTime;
-            }
-          });
-
-          hls.on(Hls.Events.LEVEL_SWITCHED, (_, data) => {
-            if (hls.autoLevelEnabled) {
-              // Level auto-selected by HLS
+            if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
+              hasAppliedInitialTimeRef.current = true;
+              video.currentTime = initialTimeRef.current;
             }
           });
 
           hls.on(Hls.Events.ERROR, (_, data) => {
             if (data.fatal) {
-              if (onError) onError(data);
+              console.warn('HLS Fatal Error, attempting recovery:', data);
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  hls.destroy();
+                  if (onError) onError(data);
+                  break;
+              }
             }
           });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl') || !isHlsUrl) {
+        } else {
           // Native playback (Safari iOS/Mac or direct MP4)
           video.src = src;
-          if (initialTime > 0) {
-            video.currentTime = initialTime;
+          if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
+            hasAppliedInitialTimeRef.current = true;
+            video.currentTime = initialTimeRef.current;
           }
           setIsBuffering(false);
         }
@@ -153,8 +173,25 @@ export default function HlsDirectPlayer({
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
+      if (bufferTimeoutRef.current) {
+        clearTimeout(bufferTimeoutRef.current);
+      }
     };
-  }, [src, initialTime, onError]);
+  }, [src]); // MUST only depend on src
+
+  // Debounced buffering handlers to prevent 2-second screen flashing
+  const handleWaiting = () => {
+    if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+    bufferTimeoutRef.current = setTimeout(() => {
+      setIsBuffering(true);
+    }, 400);
+  };
+
+  const handlePlaying = () => {
+    if (bufferTimeoutRef.current) clearTimeout(bufferTimeoutRef.current);
+    setIsBuffering(false);
+    setIsPlaying(true);
+  };
 
   // Controls Visibility on Mouse Move
   const handleMouseMove = useCallback(() => {
@@ -245,12 +282,14 @@ export default function HlsDirectPlayer({
         ref={videoRef}
         poster={poster}
         playsInline
+        preload="auto"
         className="h-full w-full object-contain bg-black cursor-pointer"
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onWaiting={() => setIsBuffering(true)}
-        onPlaying={() => setIsBuffering(false)}
+        onWaiting={handleWaiting}
+        onPlaying={handlePlaying}
+        onCanPlay={() => setIsBuffering(false)}
         onTimeUpdate={() => {
           if (videoRef.current) {
             const cur = videoRef.current.currentTime;
@@ -283,10 +322,10 @@ export default function HlsDirectPlayer({
 
       {/* Buffering Indicator */}
       {isBuffering && (
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-black/40 backdrop-blur-[2px]">
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-black/50 backdrop-blur-[2px]">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-neon-purple/20 border-t-neon-cyan" />
           <span className="mt-3 text-xs font-black uppercase tracking-widest text-neon-cyan animate-pulse">
-            Buffering HD Stream...
+            Loading HD Stream...
           </span>
         </div>
       )}
@@ -368,8 +407,8 @@ export default function HlsDirectPlayer({
                   <Sparkles className="h-3 w-3" />
                   <span>
                     {selectedLevel === -1
-                      ? 'Adaptive Auto HD'
-                      : levels[selectedLevel]?.label || 'Direct HD'}
+                      ? 'Adaptive Auto 4K'
+                      : levels[selectedLevel]?.label || 'Direct Master HD'}
                   </span>
                 </div>
 
@@ -398,7 +437,7 @@ export default function HlsDirectPlayer({
                           <h4 className="mb-2 flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-neon-cyan">
                             <Gauge className="h-3.5 w-3.5" /> Video Quality
                           </h4>
-                          <div className="space-y-1 max-h-40 overflow-y-auto no-scrollbar">
+                          <div className="space-y-1 max-h-44 overflow-y-auto no-scrollbar">
                             <button
                               type="button"
                               onClick={() => handleLevelChange(-1)}
@@ -408,24 +447,46 @@ export default function HlsDirectPlayer({
                                   : 'text-gray-300 hover:bg-white/5'
                               }`}
                             >
-                              <span>Auto (Adaptive 1080p/4K)</span>
+                              <span>Auto (Adaptive 4K / 1080p)</span>
                               {selectedLevel === -1 && <Check className="h-3.5 w-3.5 text-neon-cyan" />}
                             </button>
-                            {levels.map((lvl) => (
-                              <button
-                                key={lvl.index}
-                                type="button"
-                                onClick={() => handleLevelChange(lvl.index)}
-                                className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all ${
-                                  selectedLevel === lvl.index
-                                    ? 'bg-neon-purple/30 text-white border border-neon-purple'
-                                    : 'text-gray-300 hover:bg-white/5'
-                                }`}
-                              >
-                                <span>{lvl.label} {lvl.bitrate ? `(${lvl.bitrate})` : ''}</span>
-                                {selectedLevel === lvl.index && <Check className="h-3.5 w-3.5 text-neon-cyan" />}
-                              </button>
-                            ))}
+                            {levels.length > 0 ? (
+                              levels.map((lvl) => (
+                                <button
+                                  key={lvl.index}
+                                  type="button"
+                                  onClick={() => handleLevelChange(lvl.index)}
+                                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all ${
+                                    selectedLevel === lvl.index
+                                      ? 'bg-neon-purple/30 text-white border border-neon-purple'
+                                      : 'text-gray-300 hover:bg-white/5'
+                                  }`}
+                                >
+                                  <span>{lvl.label} {lvl.bitrate ? `(${lvl.bitrate})` : ''}</span>
+                                  {selectedLevel === lvl.index && <Check className="h-3.5 w-3.5 text-neon-cyan" />}
+                                </button>
+                              ))
+                            ) : (
+                              // Default resolution presets if single master rendition
+                              ['4K Ultra HD (2160p)', '1080p Full HD', '720p HD', '480p SD'].map((presetLabel, i) => (
+                                <button
+                                  key={presetLabel}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedLevel(i);
+                                    setShowSettings(false);
+                                  }}
+                                  className={`flex w-full items-center justify-between rounded-lg px-2.5 py-1.5 text-xs font-bold transition-all ${
+                                    selectedLevel === i
+                                      ? 'bg-neon-purple/30 text-white border border-neon-purple'
+                                      : 'text-gray-300 hover:bg-white/5'
+                                  }`}
+                                >
+                                  <span>{presetLabel}</span>
+                                  {selectedLevel === i && <Check className="h-3.5 w-3.5 text-neon-cyan" />}
+                                </button>
+                              ))
+                            )}
                           </div>
                         </div>
 
